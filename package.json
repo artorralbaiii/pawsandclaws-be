@@ -1,0 +1,22 @@
+{
+  "name": "pawsandclaws-be",
+  "version": "1.0.0",
+  "description": "Paws and Claws Backend Application",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start_dev": "nodemon index.js",
+    "start": "node index.js"
+  },
+  "author": "a.r.torralba.iii@gmail.com",
+  "license": "ISC",
+  "dependencies": {
+    "bcrypt-nodejs": "0.0.3",
+    "body-parser": "^1.19.1",
+    "cors": "^2.8.5",
+    "dotenv": "^10.0.0",
+    "express": "^4.17.2",
+    "express-session": "^1.17.2",
+    "mongoose": "^6.1.4"
+  }
+}
