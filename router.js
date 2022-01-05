@@ -10,7 +10,11 @@ module.exports = (express) => {
     
     api.get('/session', controller.getSession)
 
+    api.put('/pet/:id', controller.updatePet)
+
+
     api.post('/authenticate', controller.authenticate)
+    api.post('/pet', controller.registerPet)
     api.post('/user', controller.saveUser)
 
     return api

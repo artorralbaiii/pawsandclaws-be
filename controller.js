@@ -1,6 +1,7 @@
 
 
 const User = require('./models/user')
+const Pet = require('./models/pet')
 
 let returnError = (message) => {
     return { message: message, success: false, data: null }
@@ -14,7 +15,9 @@ module.exports = () => {
 
         authenticate: authenticate,
         getSession: getSession,
+        registerPet: registerPet,
         saveUser: saveUser,
+        updatePet: updatePet,
     }
 
     return controller
@@ -24,24 +27,6 @@ module.exports = () => {
     }
 
     // Main Features
-
-    // START - saveUser
-    function saveUser(req, res) {
-        let user = new User(req.body)
-
-        user.save((err, data) => {
-            if (err) {
-                res.json(returnError(JSON.stringify(err)))
-            } else {
-                res.json({
-                    message: 'Successful Save',
-                    success: true,
-                    data: data
-                })
-            }
-        })
-
-    } // END - saveUser
 
     // START - authenticate
     function authenticate(req, res) {
@@ -86,6 +71,8 @@ module.exports = () => {
             })
     } // END - authenticate
 
+
+    // START - getSession
     function getSession(req, res) {
         if (req.session.user) {
             res.json({
@@ -97,9 +84,59 @@ module.exports = () => {
             res.json(returnError('No Session Found!'))
         }
 
-    }
+    } // END - getSession
 
 
+    // START - registerPet
+    function registerPet(req, res) {
+        let pet = new Pet(req.body)
+
+        pet.save((err, data) => {
+            if (err) {
+                res.json(returnError(JSON.stringify(err)))
+            } else {
+                res.json({
+                    message: 'Successful Save',
+                    success: true,
+                    data: data
+                })
+            }
+        })
+    } // END - registerPet
+
+
+    // START - saveUser
+    function saveUser(req, res) {
+        let user = new User(req.body)
+
+        user.save((err, data) => {
+            if (err) {
+                res.json(returnError(JSON.stringify(err)))
+            } else {
+                res.json({
+                    message: 'Successful Save',
+                    success: true,
+                    data: data
+                })
+            }
+        })
+
+    } // END - saveUser
+
+    // START - updatePet
+    function updatePet(req, res) {
+        Pet.findByIdAndUpdate(req.params.id, req.body, { upsert: false }, (err, data) => {
+            if (err) {
+                res.json(returnError(JSON.stringify(err)))
+            } else {
+                res.json({
+                    message: 'Successfully updated',
+                    success: true,
+                    data: data
+                })
+            }
+        })
+    } // END - updatePet
 
 }
 
