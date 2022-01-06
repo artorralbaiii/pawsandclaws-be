@@ -8,8 +8,7 @@ let pet = new Schema({
     breeds: { type: String, required: true },
     color: { type: String, required: true },
     sex: { type: String, required: true },
-    weight: { type: String },
-    user: {type: Schema.Types.ObjectId, ref: 'User'}
+    weight: { type: String }
 })
 
 module.exports = mongoose.model('Pet', pet);

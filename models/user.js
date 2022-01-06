@@ -9,9 +9,10 @@ let user = new Schema({
     firstName: { type: String, required: true },
     lastName: { type: String, required: true },
     middleName: { type: String },
-    mobile: { type: String, required: true },
-    password: { type: String, required: true, select: false },
-    role: { type: String, required: true, default: 'CLIENT' },
+    mobile: { type: String },
+    password: { type: String, select: false },
+    role: { type: String, default: 'CLIENT' },
+    photoUrl: { type: String, default: 'assets/images/icons8-test-account-40.png' }
 })
 
 // Encrypt Password

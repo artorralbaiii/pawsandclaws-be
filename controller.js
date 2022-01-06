@@ -2,6 +2,7 @@
 
 const User = require('./models/user')
 const Pet = require('./models/pet')
+const mongoose = require('mongoose')
 
 let returnError = (message) => {
     return { message: message, success: false, data: null }
@@ -14,9 +15,12 @@ module.exports = () => {
         // Main Features
 
         authenticate: authenticate,
+        getPets: getPets,
         getSession: getSession,
+        logout: logout,
         registerPet: registerPet,
         saveUser: saveUser,
+        socialMediaLogin: socialMediaLogin,
         updatePet: updatePet,
     }
 
@@ -44,7 +48,7 @@ module.exports = () => {
 
                 if (data.comparePassword(req.body.password)) {
 
-                    req.session.regenerate(function () {
+                    req.session.regenerate(() => {
 
                         req.session.user = {
                             id: data._id,
@@ -71,6 +75,38 @@ module.exports = () => {
             })
     } // END - authenticate
 
+    // START - getPets
+    function getPets(req, res) {
+
+        if (req.params.id) {
+            Pet.findById(req.params.id, (err, data) => {
+                if (err) {
+                    return res.json(returnError(JSON.stringify(err)))
+                }
+
+                res.json({
+                    message: 'Pet by ID',
+                    success: true,
+                    data: data
+                })
+            })
+        } else {
+            var id = mongoose.Types.ObjectId(req.params.userid)
+            Pet.find({ user: id }, (err, data) => {
+                if (err) {
+                    return res.json(returnError(JSON.stringify(err)))
+                }
+
+                res.json({
+                    message: 'Pet by User',
+                    success: true,
+                    data: data
+                })
+            })
+        }
+
+
+    } // END - getPets
 
     // START - getSession
     function getSession(req, res) {
@@ -85,6 +121,21 @@ module.exports = () => {
         }
 
     } // END - getSession
+
+    function logout(req, res) {
+        req.session.destroy(function (err) {
+            if (err) {
+                return res.json(returnError(JSON.stringify(err)))
+            }
+
+            res.json({
+                message: 'Successful Logout',
+                success: true,
+                data: null
+            })
+
+        })
+    }
 
 
     // START - registerPet
@@ -113,15 +164,51 @@ module.exports = () => {
             if (err) {
                 res.json(returnError(JSON.stringify(err)))
             } else {
-                res.json({
-                    message: 'Successful Save',
-                    success: true,
-                    data: data
-                })
+
+                if (req.path.indexOf('login') >= 0) {
+                    req.session.regenerate(() => {
+                        req.session.user = data;
+
+                        res.json({
+                            message: 'Authenticated',
+                            success: true,
+                            data: req.session.user
+                        });
+                    });
+                } else {
+                    res.json({
+                        message: 'Successful Save',
+                        success: true,
+                        data: data
+                    })
+                }
+
             }
         })
 
     } // END - saveUser
+
+    // START - socialMediaLogin
+    function socialMediaLogin(req, res) {
+        User.findOneAndUpdate(
+            { email: req.body.email },
+            req.body, { upsert: true, new: true },
+            (err, data) => {
+                if (err) {
+                    res.json(returnError(JSON.stringify(err)))
+                } else {
+                    req.session.regenerate(() => {
+                        req.session.user = data;
+
+                        res.json({
+                            message: 'Authenticated',
+                            success: true,
+                            data: req.session.user
+                        })
+                    })
+                }
+            })
+    } // END - socialMediaLogin
 
     // START - updatePet
     function updatePet(req, res) {

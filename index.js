@@ -15,7 +15,7 @@ const app = express()
 // Parse incoming request as JSON.
 app.use(bodyParser.urlencoded({ extended: false, keepExtensions: true }))
 app.use(bodyParser.json({ limit: '50mb' }))
-app.use(cors())
+app.use(cors({credentials: true, origin: 'http://localhost:4200'}));
 
 app.use(session({ 
 	secret: process.env.SECRET_KEY, 
