@@ -1,8 +1,10 @@
-
-
-const User = require('./models/user')
 const Pet = require('./models/pet')
+const Service = require('./models/service')
+const ServiceType = require('./models/servicetype')
+const Staff = require('./models/staff')
+const User = require('./models/user')
 const mongoose = require('mongoose')
+
 
 let returnError = (message) => {
     return { message: message, success: false, data: null }
@@ -16,10 +18,16 @@ module.exports = () => {
 
         authenticate: authenticate,
         getPets: getPets,
+        getServices: getServices,
+        getServiceTypes: getServiceTypes,
         getSession: getSession,
+        getStaffs: getStaffs,
         logout: logout,
         registerPet: registerPet,
         saveUser: saveUser,
+        saveServices: saveServices,
+        saveServiceType: saveServiceType,
+        saveStaff: saveStaff,
         socialMediaLogin: socialMediaLogin,
         updatePet: updatePet,
     }
@@ -108,6 +116,68 @@ module.exports = () => {
 
     } // END - getPets
 
+    // START - getServices
+    function getServices(req, res) {
+        if (req.params.id) {
+            Service.findById(req.params.id, (err, data) => {
+                if (err) {
+                    return res.json(returnError(JSON.stringify(err)))
+                }
+
+                res.json({
+                    message: 'Service by ID',
+                    success: true,
+                    data: data
+                })
+            })
+        } else {
+            Service.find({}, (err, data) => {
+                if (err) {
+                    return res.json(returnError(JSON.stringify(err)))
+                }
+
+                res.json({
+                    message: 'All Services',
+                    success: true,
+                    data: data
+                })
+            })
+        }
+
+    } // END - getServices
+
+    // START - getServiceTypes
+    function getServiceTypes(req, res) {
+        if (req.params.id) {
+            ServiceType.findById(req.params.id)
+                .populate('service').exec((err, data) => {
+                    if (err) {
+                        return res.json(returnError(JSON.stringify(err)))
+                    }
+
+                    res.json({
+                        message: 'Service by ID',
+                        success: true,
+                        data: data
+                    })
+                })
+        } else {
+            ServiceType.find({})
+                .populate('service').exec((err, data) => {
+                    if (err) {
+                        return res.json(returnError(JSON.stringify(err)))
+                    }
+
+                    res.json({
+                        message: 'All Services',
+                        success: true,
+                        data: data
+                    })
+                })
+        }
+
+    } // END - getServiceTypes
+
     // START - getSession
     function getSession(req, res) {
         if (req.session.user) {
@@ -121,6 +191,38 @@ module.exports = () => {
         }
 
     } // END - getSession
+
+    // START - getStaffs
+    function getStaffs(req, res) {
+        if (req.params.id) {
+            Staff.findById(req.params.id)
+                .populate('capabilities').exec((err, data) => {
+                    if (err) {
+                        return res.json(returnError(JSON.stringify(err)))
+                    }
+
+                    res.json({
+                        message: 'Staff by ID',
+                        success: true,
+                        data: data
+                    })
+                })
+        } else {
+            Staff.find({})
+                .populate('capabilities').exec((err, data) => {
+                    if (err) {
+                        return res.json(returnError(JSON.stringify(err)))
+                    }
+
+                    res.json({
+                        message: 'All Staffs',
+                        success: true,
+                        data: data
+                    })
+                })
+        }
+
+    } // END - getStaff
 
     function logout(req, res) {
         req.session.destroy(function (err) {
@@ -155,6 +257,55 @@ module.exports = () => {
         })
     } // END - registerPet
 
+    // START - saveService
+    function saveServices(req, res) {
+        let service = new Service(req.body)
+
+        service.save((err, data) => {
+            if (err) {
+                res.json(returnError(JSON.stringify(err)))
+            } else {
+
+                res.json({
+                    message: 'Successful Save',
+                    success: true,
+                    data: data
+                })
+
+            }
+        })
+    }// END - saveService
+
+    // START - saveServiceType
+    function saveServiceType(req, res) {
+
+        let id = null;
+
+        if (req.params.id) {
+            id = mongoose.Types.ObjectId(req.params.id);
+        }
+
+        ServiceType.findOneAndUpdate(
+            { _id: mongoose.Types.ObjectId(id) },
+            req.body,
+            { upsert: true, new: true },
+            (err, data) => {
+
+                if (err) {
+                    res.json(returnError(JSON.stringify(err)))
+                } else {
+
+                    res.json({
+                        message: 'Successful Save',
+                        success: true,
+                        data: data
+                    })
+
+                }
+            })
+
+    }// END - saveServiceType
+
 
     // START - saveUser
     function saveUser(req, res) {
@@ -187,6 +338,43 @@ module.exports = () => {
         })
 
     } // END - saveUser
+
+    // START - saveStaff
+    function saveStaff(req, res) {
+
+        let staff = new Staff(req.body)
+
+        if (req.params.id) {
+
+            Staff.findOneAndUpdate(req.params.id, req.body, { new: true }, (err, data) => {
+                if (err) {
+                    res.json(returnError(JSON.stringify(err)))
+                } else {
+
+                    res.json({
+                        message: 'Successful Save',
+                        success: true,
+                        data: data
+                    })
+                }
+            })
+
+        } else {
+            staff.save((err, data) => {
+                if (err) {
+                    res.json(returnError(JSON.stringify(err)))
+                } else {
+
+                    res.json({
+                        message: 'Successful Save',
+                        success: true,
+                        data: data
+                    })
+                }
+            })
+        }
+
+    } // END - saveStaff
 
     // START - socialMediaLogin
     function socialMediaLogin(req, res) {
