@@ -346,16 +346,20 @@ module.exports = () => {
 
         if (req.params.id) {
 
-            Staff.findOneAndUpdate(req.params.id, req.body, { new: true }, (err, data) => {
+            Staff.findOneAndUpdate({_id: mongoose.Types.ObjectId(req.params.id)}, req.body, { new: true }, (err, data) => {
                 if (err) {
                     res.json(returnError(JSON.stringify(err)))
                 } else {
 
-                    res.json({
-                        message: 'Successful Save',
-                        success: true,
-                        data: data
-                    })
+                    data.populate('capabilities')
+                        .then((data) => {
+                            res.json({
+                                message: 'Successful Save',
+                                success: true,
+                                data: data
+                            })
+                        });
+
                 }
             })
 
@@ -365,11 +369,14 @@ module.exports = () => {
                     res.json(returnError(JSON.stringify(err)))
                 } else {
 
-                    res.json({
-                        message: 'Successful Save',
-                        success: true,
-                        data: data
-                    })
+                    data.populate('capabilities')
+                        .then((data) => {
+                            res.json({
+                                message: 'Successful Save',
+                                success: true,
+                                data: data
+                            })
+                        });
                 }
             })
         }
