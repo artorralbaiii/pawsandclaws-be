@@ -1,3 +1,4 @@
+const Config = require('./models/configuration')
 const Pet = require('./models/pet')
 const Service = require('./models/service')
 const ServiceType = require('./models/servicetype')
@@ -18,12 +19,14 @@ module.exports = () => {
 
         authenticate: authenticate,
         getPets: getPets,
+        getConfig: getConfig,
         getServices: getServices,
         getServiceTypes: getServiceTypes,
         getSession: getSession,
         getStaffs: getStaffs,
         logout: logout,
         registerPet: registerPet,
+        saveConfig: saveConfig,
         saveUser: saveUser,
         saveServices: saveServices,
         saveServiceType: saveServiceType,
@@ -115,6 +118,24 @@ module.exports = () => {
 
 
     } // END - getPets
+
+    // START - getConfig
+    function getConfig(req, res) {
+        Config.findOne({}, {}, { sort: { 'created_at': -1 } }, (err, data) => {
+            if (err) {
+                return res.json(returnError(JSON.stringify(err)))
+            }
+
+            res.json({
+                message: 'Configurations',
+                success: true,
+                data: data
+            })
+
+
+        })
+
+    } // END - getConfig
 
     // START - getServices
     function getServices(req, res) {
@@ -257,6 +278,38 @@ module.exports = () => {
         })
     } // END - registerPet
 
+    // START - saveConfig
+    function saveConfig(req, res) {
+        Config.findOne({}, {}, { sort: { 'created_at': -1 } }, (err, data) => {
+            if (err) {
+                res.json(returnError(JSON.stringify(err)))
+            }
+
+            if (data) {
+                data.startTime = req.body.startTime
+                data.endTime = req.body.endTime
+                data.excludeTime = req.body.excludeTime
+                data.excludeDays = req.body.excludeDays
+                data.excludeDates = req.body.excludeDates
+            } else {
+                data = new Config(req.body)
+            }
+            
+            data.save((err, savedData) => {
+                if (err) {
+                    res.json(returnError(JSON.stringify(err)))
+                } else {
+                    res.json({
+                        message: 'Successful Save',
+                        success: true,
+                        data: savedData
+                    })
+                }
+            })
+            
+        });
+    } // END - saveConfig
+
     // START - saveService
     function saveServices(req, res) {
         let service = new Service(req.body)
@@ -346,7 +399,7 @@ module.exports = () => {
 
         if (req.params.id) {
 
-            Staff.findOneAndUpdate({_id: mongoose.Types.ObjectId(req.params.id)}, req.body, { new: true }, (err, data) => {
+            Staff.findOneAndUpdate({ _id: mongoose.Types.ObjectId(req.params.id) }, req.body, { new: true }, (err, data) => {
                 if (err) {
                     res.json(returnError(JSON.stringify(err)))
                 } else {

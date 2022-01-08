@@ -9,6 +9,9 @@ let pet = new Schema({
     color: { type: String, required: true },
     sex: { type: String, required: true },
     weight: { type: String }
+},
+{
+  timestamps: true
 })
 
 module.exports = mongoose.model('Pet', pet);

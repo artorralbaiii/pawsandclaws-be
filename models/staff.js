@@ -8,6 +8,9 @@ let staff = new Schema({
     position: { type: String, required: true },
     capabilities: [{ type: Schema.Types.ObjectId, ref: 'ServiceType' }],
     staffId: Number
+},
+{
+  timestamps: true
 })
 
 staff.plugin(autoIncrement, { inc_field: 'staffId'});

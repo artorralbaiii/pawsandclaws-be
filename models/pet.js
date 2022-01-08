@@ -10,6 +10,9 @@ let pet = new Schema({
     sex: { type: String, required: true },
     weight: { type: String },
     user: {type: Schema.Types.ObjectId, ref: 'User'}
+},
+{
+  timestamps: true
 })
 
 module.exports = mongoose.model('Pet', pet);

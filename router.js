@@ -8,6 +8,7 @@ module.exports = (express) => {
     
     // Main Features
     
+    api.get('/config', controller.getConfig)
     api.get('/pet/:id', controller.getPets)
     api.get('/pet/user/:userid', controller.getPets)
     api.get('/service-type', controller.getServiceTypes)
@@ -21,6 +22,7 @@ module.exports = (express) => {
     api.put('/pet/:id', controller.updatePet)
 
     api.post('/authenticate', controller.authenticate)
+    api.post('/config', controller.saveConfig)
     api.post('/logout', controller.logout)
     api.post('/pet', controller.registerPet)
     api.post('/service-type', controller.saveServiceType)
