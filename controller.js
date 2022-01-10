@@ -1,5 +1,6 @@
 const Config = require('./models/configuration')
 const Pet = require('./models/pet')
+const Schedule = require('./models/schedule')
 const Service = require('./models/service')
 const ServiceType = require('./models/servicetype')
 const Staff = require('./models/staff')
@@ -20,6 +21,7 @@ module.exports = () => {
         authenticate: authenticate,
         getPets: getPets,
         getConfig: getConfig,
+        getSchedules: getSchedules,
         getServices: getServices,
         getServiceTypes: getServiceTypes,
         getSession: getSession,
@@ -27,10 +29,11 @@ module.exports = () => {
         logout: logout,
         registerPet: registerPet,
         saveConfig: saveConfig,
-        saveUser: saveUser,
+        saveSchedule: saveSchedule,
         saveServices: saveServices,
         saveServiceType: saveServiceType,
         saveStaff: saveStaff,
+        saveUser: saveUser,
         socialMediaLogin: socialMediaLogin,
         updatePet: updatePet,
     }
@@ -136,6 +139,21 @@ module.exports = () => {
         })
 
     } // END - getConfig
+
+    // START - getSchedules
+    function getSchedules(req, res) {
+        Schedule.find({}, (err, data) => {
+                if (err) {
+                    return res.json(returnError(JSON.stringify(err)))
+                }
+
+                res.json({
+                    message: 'All Schedules',
+                    success: true,
+                    data: data
+                })
+            })
+    } // END - getSchedules
 
     // START - getServices
     function getServices(req, res) {
@@ -263,19 +281,47 @@ module.exports = () => {
 
     // START - registerPet
     function registerPet(req, res) {
-        let pet = new Pet(req.body)
+        
+        let id = null;
 
-        pet.save((err, data) => {
-            if (err) {
-                res.json(returnError(JSON.stringify(err)))
-            } else {
-                res.json({
-                    message: 'Successful Save',
-                    success: true,
-                    data: data
-                })
-            }
-        })
+        if (req.params.id) {
+            id = mongoose.Types.ObjectId(req.params.id);
+        }
+
+        Pet.findOneAndUpdate(
+            { _id: mongoose.Types.ObjectId(id) },
+            req.body,
+            { upsert: true, new: true },
+            (err, data) => {
+
+                if (err) {
+                    res.json(returnError(JSON.stringify(err)))
+                } else {
+
+                    res.json({
+                        message: 'Successful Save',
+                        success: true,
+                        data: data
+                    })
+
+                }
+            })
+
+
+        // let pet = new Pet(req.body)
+
+        // pet.save((err, data) => {
+        //     if (err) {
+        //         res.json(returnError(JSON.stringify(err)))
+        //     } else {
+        //         res.json({
+        //             message: 'Successful Save',
+        //             success: true,
+        //             data: data
+        //         })
+        //     }
+        // })
+
     } // END - registerPet
 
     // START - saveConfig
@@ -294,7 +340,7 @@ module.exports = () => {
             } else {
                 data = new Config(req.body)
             }
-            
+
             data.save((err, savedData) => {
                 if (err) {
                     res.json(returnError(JSON.stringify(err)))
@@ -306,9 +352,38 @@ module.exports = () => {
                     })
                 }
             })
-            
+
         });
     } // END - saveConfig
+
+    // START - saveSchedule
+    function saveSchedule(req, res) {
+
+        Schedule.remove({}, (errRemove) => {
+
+            if (errRemove) {
+                res.json(returnError(JSON.stringify(errRemove)))
+            } else {
+
+                Schedule.insertMany(req.body, (err, data) => {
+                    if (err) {
+                        res.json(returnError(JSON.stringify(err)))
+                    } else {
+
+                        res.json({
+                            message: 'Successful Save',
+                            success: true,
+                            data: data
+                        })
+                    }
+                })
+
+            }
+
+        })
+
+
+    } // END - saveSchedule
 
     // START - saveService
     function saveServices(req, res) {
@@ -324,7 +399,6 @@ module.exports = () => {
                     success: true,
                     data: data
                 })
-
             }
         })
     }// END - saveService

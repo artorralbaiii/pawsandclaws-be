@@ -1,17 +1,18 @@
 const mongoose = require('mongoose')
 const Schema = mongoose.Schema;
 
-let pet = new Schema({
-    petName: { type: String, required: true },
-    dob: { type: Date, required: true },
-    species: { type: String, required: true },
-    breeds: { type: String, required: true },
-    color: { type: String, required: true },
-    sex: { type: String, required: true },
-    weight: { type: String }
+let schedule = new Schema({
+  title: { type: String },
+  start: { type: Date },
+  end: { type: Date },
+  color: {
+    primary: { type: String },
+    secondary: { type: String }
+  },
+  meta: { type: Schema.Types.ObjectId, ref: 'Staff' }
 },
-{
-  timestamps: true
-})
+  {
+    timestamps: true
+  })
 
-module.exports = mongoose.model('Pet', pet);
+module.exports = mongoose.model('Schedule', schedule);
