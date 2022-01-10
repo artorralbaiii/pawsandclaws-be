@@ -30,8 +30,17 @@ user.pre('save', function (next) {
         if (err) return next(err);
 
         currentUser.password = hash;
-        next();
+
+        bcrypt.hash(Math.floor(Date.now() / 1000), null, null, function (err, hash) {
+            if (err) return next(err);
+    
+            currentUser.verificationCode = hash;
+            
+            next();
+        });
     });
+
+
 });
 
 user.methods.comparePassword = function (password) {

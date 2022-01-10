@@ -5,7 +5,12 @@ const Service = require('./models/service')
 const ServiceType = require('./models/servicetype')
 const Staff = require('./models/staff')
 const User = require('./models/user')
+const utils = require('./utils')
 const mongoose = require('mongoose')
+
+const sgMail = require('@sendgrid/mail')
+
+sgMail.setApiKey(process.env.SG_API_KEY)
 
 
 let returnError = (message) => {
@@ -26,6 +31,7 @@ module.exports = () => {
         getServiceTypes: getServiceTypes,
         getSession: getSession,
         getStaffs: getStaffs,
+        getUser: getUser,
         logout: logout,
         registerPet: registerPet,
         saveConfig: saveConfig,
@@ -36,6 +42,7 @@ module.exports = () => {
         saveUser: saveUser,
         socialMediaLogin: socialMediaLogin,
         updatePet: updatePet,
+        verifyAccount: verifyAccount
     }
 
     return controller
@@ -49,7 +56,7 @@ module.exports = () => {
     // START - authenticate
     function authenticate(req, res) {
         User.findOne({ email: req.body.email })
-            .select('_id password firstName middleName lastName email address mobile role')
+            .select('_id password firstName middleName lastName email address mobile role activated')
             .exec(function (err, data) {
                 if (err) {
                     return res.json(returnError(JSON.stringify(err)))
@@ -72,7 +79,8 @@ module.exports = () => {
                             mobile: data.mobile,
                             address: data.address,
                             role: data.role,
-                            email: data.email
+                            email: data.email,
+                            activated: data.activated
                         }
 
                         res.json({
@@ -143,16 +151,16 @@ module.exports = () => {
     // START - getSchedules
     function getSchedules(req, res) {
         Schedule.find({}, (err, data) => {
-                if (err) {
-                    return res.json(returnError(JSON.stringify(err)))
-                }
+            if (err) {
+                return res.json(returnError(JSON.stringify(err)))
+            }
 
-                res.json({
-                    message: 'All Schedules',
-                    success: true,
-                    data: data
-                })
+            res.json({
+                message: 'All Schedules',
+                success: true,
+                data: data
             })
+        })
     } // END - getSchedules
 
     // START - getServices
@@ -263,6 +271,27 @@ module.exports = () => {
 
     } // END - getStaff
 
+    // START - getUser
+    function getUser(req, res) {
+        let id = req.params.id
+
+        User.findById(id, (err, data) => {
+            if (err) {
+                return res.json(returnError(JSON.stringify(err)))
+            }
+
+            res.json({
+                message: 'Successful Retrieval',
+                success: true,
+                data: data
+            })
+        })// END - getUser
+
+
+    }
+
+
+
     function logout(req, res) {
         req.session.destroy(function (err) {
             if (err) {
@@ -281,7 +310,7 @@ module.exports = () => {
 
     // START - registerPet
     function registerPet(req, res) {
-        
+
         let id = null;
 
         if (req.params.id) {
@@ -444,23 +473,42 @@ module.exports = () => {
             } else {
 
                 if (req.path.indexOf('login') >= 0) {
-                    req.session.regenerate(() => {
-                        req.session.user = data;
 
-                        res.json({
-                            message: 'Authenticated',
-                            success: true,
-                            data: req.session.user
-                        });
-                    });
+                    let url = process.env.VERIFICATION_URL + data['verificationCode']
+                    const message = {
+                        to: data['email'],
+                        from: {
+                            name: process.env.SG_FROM_NAME,
+                            email: process.env.SG_FROM_EMAIL
+                        },
+                        subject: 'Paws and Claws: Account Registration',
+                        text: `Confirm your account registration. 
+                            
+                            Please click this <a href="${url}">Link</a> to verify your email address and finalize your registration.
+                            `,
+                        html: `<h1>Confirm your account registration</h1>. 
+                            
+                            Please click this <a href="${url}">Link</a> to verify your email address and finalize your registration.
+                            `
+                    }
+
+                    sgMail.send(message)
+                        .then(response => {
+                            res.json({
+                                message: 'Successful Save',
+                                success: true,
+                                data: data
+                            })
+                        })
+                        .catch(error => console.log(error.message))
+
                 } else {
                     res.json({
                         message: 'Successful Save',
                         success: true,
-                        data: data
+                        data: response
                     })
                 }
-
             }
         })
 
@@ -546,6 +594,22 @@ module.exports = () => {
             }
         })
     } // END - updatePet
+
+    function verifyAccount(req, res) {
+        let url = process.env.CLIENT_HOST + '/sign-in'
+        User.findOneAndUpdate({ verificationCode: req.params.id }, { activated: true }, (err, data) => {
+            if (err) {
+                res.send('There is a problem encountered verifying your account. Please reach out to us to fix the problem.')
+            } else {
+                if (data) {
+                    res.send(`<b>Thank you!</b> Your account has been successfully verified. <a href="${url}">Login</a>`)
+                } else {
+                    res.send(`Invalid Verification Link`)
+                }
+            }
+        })
+
+    }
 
 }
 

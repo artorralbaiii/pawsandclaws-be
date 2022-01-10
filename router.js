@@ -19,6 +19,8 @@ module.exports = (express) => {
     api.get('/session', controller.getSession)
     api.get('/staff', controller.getStaffs)
     api.get('/staff/:id', controller.getStaffs)
+    api.get('/user/:id', controller.getUser)
+    api.get('/user/verification/:id', controller.verifyAccount)
 
     api.put('/pet/:id', controller.updatePet)
 
