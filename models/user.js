@@ -1,5 +1,6 @@
 const bcrypt = require('bcrypt-nodejs')
 const mongoose = require('mongoose')
+const uuid = require('uuid')
 
 const Schema = mongoose.Schema;
 
@@ -30,14 +31,8 @@ user.pre('save', function (next) {
         if (err) return next(err);
 
         currentUser.password = hash;
-
-        bcrypt.hash(Math.floor(Date.now() / 1000), null, null, function (err, hash) {
-            if (err) return next(err);
-    
-            currentUser.verificationCode = hash;
-            
-            next();
-        });
+        currentUser.verificationCode = uuid.v1()
+        next()
     });
 
 

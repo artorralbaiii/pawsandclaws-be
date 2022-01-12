@@ -21,6 +21,7 @@ module.exports = (express) => {
     api.get('/staff/:id', controller.getStaffs)
     api.get('/user/:id', controller.getUser)
     api.get('/user/verification/:id', controller.verifyAccount)
+    api.get('/user/verification/resend/:id', controller.resendEmailVerification)
 
     api.put('/pet/:id', controller.updatePet)
 
@@ -33,6 +34,7 @@ module.exports = (express) => {
     api.post('/service-type', controller.saveServiceType)
     api.post('/service-type/:id', controller.saveServiceType)
     api.post('/service', controller.saveServices)
+    api.post('/setup-password/:id', controller.setupPassword)
     api.post('/staff/:id', controller.saveStaff)
     api.post('/staff', controller.saveStaff)
     api.post('/social-media-login', controller.socialMediaLogin)

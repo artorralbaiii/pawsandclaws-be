@@ -18,7 +18,10 @@
     "dotenv": "^10.0.0",
     "express": "^4.17.2",
     "express-session": "^1.17.2",
+    "install": "^0.13.0",
     "mongoose": "^6.1.4",
-    "mongoose-sequence": "^5.3.1"
+    "mongoose-sequence": "^5.3.1",
+    "npm": "^8.3.0",
+    "uuid": "^8.3.2"
   }
 }

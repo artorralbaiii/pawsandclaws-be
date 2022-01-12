@@ -7,8 +7,11 @@ const Staff = require('./models/staff')
 const User = require('./models/user')
 const utils = require('./utils')
 const mongoose = require('mongoose')
+const uuid = require('uuid')
 
 const sgMail = require('@sendgrid/mail')
+const { request } = require('express')
+const { trusted } = require('mongoose')
 
 sgMail.setApiKey(process.env.SG_API_KEY)
 
@@ -34,12 +37,14 @@ module.exports = () => {
         getUser: getUser,
         logout: logout,
         registerPet: registerPet,
+        resendEmailVerification: resendEmailVerification,
         saveConfig: saveConfig,
         saveSchedule: saveSchedule,
         saveServices: saveServices,
         saveServiceType: saveServiceType,
         saveStaff: saveStaff,
         saveUser: saveUser,
+        setupPassword: setupPassword,
         socialMediaLogin: socialMediaLogin,
         updatePet: updatePet,
         verifyAccount: verifyAccount
@@ -353,6 +358,48 @@ module.exports = () => {
 
     } // END - registerPet
 
+    // START - resendEmailVerification
+    function resendEmailVerification(req, res) {
+        User.findById(req.params.id, (err, data) => {
+            if (err) {
+                return res.json(returnError(JSON.stringify(err)))
+            }
+
+            let url = process.env.VERIFICATION_URL + data['verificationCode']
+            const message = {
+                to: data['email'],
+                from: {
+                    name: process.env.SG_FROM_NAME,
+                    email: process.env.SG_FROM_EMAIL
+                },
+                subject: 'Paws and Claws: Account Registration',
+                text: `Welcome to Paws and Claws. 
+                    
+                    You are almost there! Activate your account by clicking on the link below.
+                    
+                    ${url}
+                    `,
+                html: `<h1>Welcome to Paws and Claws</h1>.
+
+                <p><b>You are almost there!</b> Activate your account by clicking on the link below.</p>
+                <br>
+                <p><a href="${url}"><b>Verify Email</b></a>.</p>
+                    `
+            }
+
+            sgMail.send(message)
+                .then(response => {
+                    res.json({
+                        message: 'Successful Send',
+                        success: true,
+                        data: data
+                    })
+                })
+                .catch(error => console.log(error.message))
+        })
+    }
+    // END - resendEmailVerification
+
     // START - saveConfig
     function saveConfig(req, res) {
         Config.findOne({}, {}, { sort: { 'created_at': -1 } }, (err, data) => {
@@ -482,13 +529,17 @@ module.exports = () => {
                             email: process.env.SG_FROM_EMAIL
                         },
                         subject: 'Paws and Claws: Account Registration',
-                        text: `Confirm your account registration. 
+                        text: `Welcome to Paws and Claws. 
                             
-                            Please click this <a href="${url}">Link</a> to verify your email address and finalize your registration.
+                            You are almost there! Activate your account by clicking on the link below.
+                            
+                            ${url}
                             `,
-                        html: `<h1>Confirm your account registration</h1>. 
-                            
-                            Please click this <a href="${url}">Link</a> to verify your email address and finalize your registration.
+                        html: `<h1>Welcome to Paws and Claws</h1>.
+
+                        <p><b>You are almost there!</b> Activate your account by clicking on the link below.</p>
+                        <br>
+                        <p><a href="${url}"><b>Verify Email</b></a>.</p>
                             `
                     }
 
@@ -541,22 +592,97 @@ module.exports = () => {
         } else {
             staff.save((err, data) => {
                 if (err) {
-                    res.json(returnError(JSON.stringify(err)))
+                    return res.json(returnError(JSON.stringify(err)))
                 } else {
 
-                    data.populate('capabilities')
-                        .then((data) => {
-                            res.json({
-                                message: 'Successful Save',
-                                success: true,
-                                data: data
-                            })
-                        });
+                    let user = new User({
+                        email: data.email,
+                        firstName: data.staffName,
+                        lastName: data.staffLastName,
+                        password: data.email,
+                        role: 'STAFF',
+                        activated: false,
+                        verificationCode: uuid.v1()
+                    })
+
+                    user.save((err, dataUser) => {
+
+                        if (err) {
+                            res.json(returnError(JSON.stringify(err)))
+                        } else {
+                            let url = process.env.CLIENT_HOST + '/setup-password/' + dataUser._id
+
+                            const message = {
+                                to: dataUser['email'],
+                                from: {
+                                    name: process.env.SG_FROM_NAME,
+                                    email: process.env.SG_FROM_EMAIL
+                                },
+                                subject: 'Paws and Claws: Account Creation',
+                                text: `Welcome to Paws and Claws. 
+                                    
+                                    Please setup your password in the link below.
+                                    
+                                    ${url}
+                                    `,
+                                html: `<h1>Welcome to Paws and Claws</h1>.
+        
+                                <p><b>Please setup your password in the link below</p>
+                                <br>
+                                <p><a href="${url}"><b>Set Password</b></a>.</p>
+                                    `
+                            }
+
+                            sgMail.send(message)
+                                .then(response => {
+                                    data.populate('capabilities')
+                                        .then((dataStaff) => {
+                                            res.json({
+                                                message: 'Successful Save',
+                                                success: true,
+                                                data: dataStaff
+                                            })
+                                        });
+                                })
+                                .catch(error => console.log(error.message))
+                        }
+
+                    })
                 }
             })
         }
 
     } // END - saveStaff
+
+    // START - setupPassword
+    function setupPassword(req, res) {
+
+        User.findOne({ _id: mongoose.Types.ObjectId(req.params.id)})
+            .select('_id password firstName middleName lastName email address mobile role activated')
+            .exec((err, data) => {
+                if (err) {
+                    return res.json(returnError(JSON.stringify(err)))
+                } else {
+
+                    data.password = req.body.password
+                    data.activated = true
+
+                    data.save((err1, userData)=> {
+                        if (err1) {
+                            return res.json(returnError(JSON.stringify(err1)))
+                        } else {    
+                            return res.json({
+                                message: 'Successful Save',
+                                success: true,
+                                data: userData
+                            })
+                        }
+                    })
+
+                    
+                }
+            })
+    } // END - setupPassword
 
     // START - socialMediaLogin
     function socialMediaLogin(req, res) {
