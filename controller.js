@@ -1,4 +1,5 @@
 const Config = require('./models/configuration')
+const Appointment = require('./models/appointment')
 const Pet = require('./models/pet')
 const Schedule = require('./models/schedule')
 const Service = require('./models/service')
@@ -27,6 +28,7 @@ module.exports = () => {
         // Main Features
 
         authenticate: authenticate,
+        getAppointments: getAppointments,
         getPets: getPets,
         getConfig: getConfig,
         getSchedules: getSchedules,
@@ -36,8 +38,10 @@ module.exports = () => {
         getStaffs: getStaffs,
         getUser: getUser,
         logout: logout,
+        petCount: petCount,
         registerPet: registerPet,
         resendEmailVerification: resendEmailVerification,
+        saveAppointment: saveAppointment,
         saveConfig: saveConfig,
         saveSchedule: saveSchedule,
         saveServices: saveServices,
@@ -101,6 +105,57 @@ module.exports = () => {
 
             })
     } // END - authenticate
+
+    // START - getAppointments
+    function getAppointments(req, res) {
+
+        if (req.params.userid) {
+            Appointment.find({ user: mongoose.Types.ObjectId(req.params.userid) })
+                .populate('user serviceType pet')
+                .exec((err, data) => {
+                    if (err) {
+                        return res.json(returnError(JSON.stringify(err)))
+                    }
+
+                    res.json({
+                        message: 'Apointment by User',
+                        success: true,
+                        data: data
+                    })
+                })
+        } else if (req.params.id) {
+            var id = mongoose.Types.ObjectId(req.params.userid)
+            Appointment.find({ _id: id })
+                .populate('user serviceType pet')
+                .exec((err, data) => {
+                    if (err) {
+                        return res.json(returnError(JSON.stringify(err)))
+                    }
+
+                    res.json({
+                        message: 'Appointment by Id',
+                        success: true,
+                        data: data
+                    })
+                })
+        } else {
+            Appointment.find({})
+                .populate('user serviceType pet')
+                .exec((err, data) => {
+                    if (err) {
+                        return res.json(returnError(JSON.stringify(err)))
+                    }
+
+                    res.json({
+                        message: 'Appointments',
+                        success: true,
+                        data: data
+                    })
+                })
+        }
+
+
+    } // END - getAppointments
 
     // START - getPets
     function getPets(req, res) {
@@ -312,6 +367,23 @@ module.exports = () => {
         })
     }
 
+    function petCount(req, res) {
+        let id = req.params.id
+
+        Pet.count({ user: mongoose.Types.ObjectId(req.params.id) }, function (err, count) {
+            if (err) {
+                res.json(returnError(JSON.stringify(err)))
+            } else {
+                res.json({
+                    message: 'Successful Save',
+                    success: true,
+                    data: count
+                })
+
+            }
+        })
+    }
+
 
     // START - registerPet
     function registerPet(req, res) {
@@ -357,6 +429,25 @@ module.exports = () => {
         // })
 
     } // END - registerPet
+
+    // START - saveAppointment
+    function saveAppointment(req, res) {
+        let appointment = new Appointment(req.body)
+
+        appointment.save((err, data) => {
+            if (err) {
+                res.json(returnError(JSON.stringify(err)))
+            } else {
+
+                res.json({
+                    message: 'Successful Save',
+                    success: true,
+                    data: data
+                })
+            }
+        })
+    } // END - saveAppointment
+
 
     // START - resendEmailVerification
     function resendEmailVerification(req, res) {
@@ -657,7 +748,7 @@ module.exports = () => {
     // START - setupPassword
     function setupPassword(req, res) {
 
-        User.findOne({ _id: mongoose.Types.ObjectId(req.params.id)})
+        User.findOne({ _id: mongoose.Types.ObjectId(req.params.id) })
             .select('_id password firstName middleName lastName email address mobile role activated')
             .exec((err, data) => {
                 if (err) {
@@ -667,10 +758,10 @@ module.exports = () => {
                     data.password = req.body.password
                     data.activated = true
 
-                    data.save((err1, userData)=> {
+                    data.save((err1, userData) => {
                         if (err1) {
                             return res.json(returnError(JSON.stringify(err1)))
-                        } else {    
+                        } else {
                             return res.json({
                                 message: 'Successful Save',
                                 success: true,
@@ -679,7 +770,7 @@ module.exports = () => {
                         }
                     })
 
-                    
+
                 }
             })
     } // END - setupPassword

@@ -8,9 +8,13 @@ module.exports = (express) => {
     
     // Main Features
     
+    api.get('/appointment/user/:userid', controller.getAppointments)
+    api.get('/appointment/:id', controller.getAppointments)
+    api.get('/appointment', controller.getAppointments)
     api.get('/config', controller.getConfig)
     api.get('/pet/:id', controller.getPets)
     api.get('/pet/user/:userid', controller.getPets)
+    api.get('/pet-count/:id', controller.petCount)
     api.get('/schedule', controller.getSchedules)
     api.get('/service-type', controller.getServiceTypes)
     api.get('/service-type/:id', controller.getServiceTypes)
@@ -25,6 +29,7 @@ module.exports = (express) => {
 
     api.put('/pet/:id', controller.updatePet)
 
+    api.post('/appointment', controller.saveAppointment)
     api.post('/authenticate', controller.authenticate)
     api.post('/config', controller.saveConfig)
     api.post('/logout', controller.logout)
