@@ -9,6 +9,7 @@ module.exports = (express) => {
     // Main Features
     
     api.get('/appointment/user/:userid', controller.getAppointments)
+    api.get('/appointment/date/:y/:m/:d', controller.getAppointmentTime)
     api.get('/appointment/:id', controller.getAppointments)
     api.get('/appointment', controller.getAppointments)
     api.get('/config', controller.getConfig)

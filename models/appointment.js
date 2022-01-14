@@ -7,7 +7,11 @@ let appointment = new Schema({
     user: {type: Schema.Types.ObjectId, ref: 'User'},
     date: { type: Date },
     status: { type: String },
-    additionalDetails: { type: String }
+    additionalDetails: { type: String },
+    time: { type: Number },
+    y: { type: Number },
+    m: { type: Number },
+    d: { type: Number }
 },
     {
         timestamps: true

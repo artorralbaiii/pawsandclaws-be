@@ -29,6 +29,7 @@ module.exports = () => {
 
         authenticate: authenticate,
         getAppointments: getAppointments,
+        getAppointmentTime: getAppointmentTime,
         getPets: getPets,
         getConfig: getConfig,
         getSchedules: getSchedules,
@@ -156,6 +157,20 @@ module.exports = () => {
 
 
     } // END - getAppointments
+
+    function getAppointmentTime(req, res) {
+        let y = req.params.y
+        let m = req.params.m
+        let d = req.params.d
+
+        Appointment.find({ y: y, m: m, d: d }, '-_id time' , (err, data) => {
+            if (err) {
+                res.json([])
+            } else {
+                res.json(data.map(val => val.time))
+            }
+        })
+    }
 
     // START - getPets
     function getPets(req, res) {
