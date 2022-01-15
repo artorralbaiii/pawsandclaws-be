@@ -24,6 +24,7 @@ module.exports = (express) => {
     api.get('/session', controller.getSession)
     api.get('/staff', controller.getStaffs)
     api.get('/staff/:id', controller.getStaffs)
+    api.get('/staff/count/:serviceType/:weekDay', controller.getAvailableStaff)
     api.get('/user/:id', controller.getUser)
     api.get('/user/verification/:id', controller.verifyAccount)
     api.get('/user/verification/resend/:id', controller.resendEmailVerification)
@@ -31,6 +32,7 @@ module.exports = (express) => {
     api.put('/pet/:id', controller.updatePet)
 
     api.post('/appointment', controller.saveAppointment)
+    api.post('/appointment/:id', controller.saveAppointment)
     api.post('/authenticate', controller.authenticate)
     api.post('/config', controller.saveConfig)
     api.post('/logout', controller.logout)

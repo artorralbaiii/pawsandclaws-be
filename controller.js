@@ -30,6 +30,7 @@ module.exports = () => {
         authenticate: authenticate,
         getAppointments: getAppointments,
         getAppointmentTime: getAppointmentTime,
+        getAvailableStaff: getAvailableStaff, 
         getPets: getPets,
         getConfig: getConfig,
         getSchedules: getSchedules,
@@ -125,8 +126,8 @@ module.exports = () => {
                     })
                 })
         } else if (req.params.id) {
-            var id = mongoose.Types.ObjectId(req.params.userid)
-            Appointment.find({ _id: id })
+            var id = mongoose.Types.ObjectId(req.params.id)
+            Appointment.findOne({ _id: id })
                 .populate('user serviceType pet')
                 .exec((err, data) => {
                     if (err) {
@@ -163,7 +164,7 @@ module.exports = () => {
         let m = req.params.m
         let d = req.params.d
 
-        Appointment.find({ y: y, m: m, d: d }, '-_id time' , (err, data) => {
+        Appointment.find({ y: y, m: m, d: d, status: { $ne: 'Cancelled'} }, '-_id time' , (err, data) => {
             if (err) {
                 res.json([])
             } else {
@@ -171,6 +172,20 @@ module.exports = () => {
             }
         })
     }
+
+    // START - getAvailableStaff
+    function getAvailableStaff(req, res) {
+        let serviceType = mongoose.Types.ObjectId(req.params.serviceType)
+        let weekDay = req.params.weekDay
+
+        Staff.count({capabilities: serviceType, availability: weekDay}, (err, data) => {
+            if (err) {
+                return res.json(returnError(JSON.stringify(err)))
+            }
+
+            res.json(data)
+        })
+    } // EN - getAvailableStaff
 
     // START - getPets
     function getPets(req, res) {
@@ -447,20 +462,46 @@ module.exports = () => {
 
     // START - saveAppointment
     function saveAppointment(req, res) {
-        let appointment = new Appointment(req.body)
 
-        appointment.save((err, data) => {
-            if (err) {
-                res.json(returnError(JSON.stringify(err)))
-            } else {
+        let id = null;
 
-                res.json({
-                    message: 'Successful Save',
-                    success: true,
-                    data: data
-                })
-            }
-        })
+        if (req.params.id) {
+            id = mongoose.Types.ObjectId(req.params.id);
+        }
+
+        Appointment.findOneAndUpdate(
+            { _id: mongoose.Types.ObjectId(id) },
+            req.body,
+            { upsert: true, new: true },
+            (err, data) => {
+
+                if (err) {
+                    res.json(returnError(JSON.stringify(err)))
+                } else {
+
+                    res.json({
+                        message: 'Successful Save',
+                        success: true,
+                        data: data
+                    })
+
+                }
+            })
+
+        // appointment.save((err, data) => {
+        //     if (err) {
+        //         res.json(returnError(JSON.stringify(err)))
+        //     } else {
+
+        //         res.json({
+        //             message: 'Successful Save',
+        //             success: true,
+        //             data: data
+        //         })
+        //     }
+        // })
+
+
     } // END - saveAppointment
 
 
