@@ -10,7 +10,10 @@ module.exports = (express) => {
     
     api.get('/appointment/user/:userid', controller.getAppointments)
     api.get('/appointment/date/:y/:m/:d', controller.getAppointmentTime)
+    api.get('/appointment/status/:status/:from/:to', controller.getAppointments)
+    api.get('/appointment/status/:status', controller.getAppointments)
     api.get('/appointment/:id', controller.getAppointments)
+    api.get('/appointment/:from/:to', controller.getAppointments)
     api.get('/appointment', controller.getAppointments)
     api.get('/config', controller.getConfig)
     api.get('/pet/:id', controller.getPets)

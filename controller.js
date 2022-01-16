@@ -30,7 +30,7 @@ module.exports = () => {
         authenticate: authenticate,
         getAppointments: getAppointments,
         getAppointmentTime: getAppointmentTime,
-        getAvailableStaff: getAvailableStaff, 
+        getAvailableStaff: getAvailableStaff,
         getPets: getPets,
         getConfig: getConfig,
         getSchedules: getSchedules,
@@ -114,6 +114,7 @@ module.exports = () => {
         if (req.params.userid) {
             Appointment.find({ user: mongoose.Types.ObjectId(req.params.userid) })
                 .populate('user serviceType pet')
+                .sort({date: -1})
                 .exec((err, data) => {
                     if (err) {
                         return res.json(returnError(JSON.stringify(err)))
@@ -128,7 +129,8 @@ module.exports = () => {
         } else if (req.params.id) {
             var id = mongoose.Types.ObjectId(req.params.id)
             Appointment.findOne({ _id: id })
-                .populate('user serviceType pet')
+                .populate('user serviceType pet attendedBy')
+                .sort({date: -1})
                 .exec((err, data) => {
                     if (err) {
                         return res.json(returnError(JSON.stringify(err)))
@@ -140,9 +142,52 @@ module.exports = () => {
                         data: data
                     })
                 })
+        } else if (req.params.status) {
+
+            let options = {
+                status: req.params.status
+            }
+
+            if (req.params.from && req.params.to) {
+                options = {
+                    status: req.params.status,
+                    date: {
+                        $gte: req.params.from,
+                        $lte: req.params.to 
+                    }
+                }
+            }
+
+            Appointment.find(options)
+            .populate('user serviceType pet attendedBy')
+            .sort({date: -1})
+            .exec((err, data) => {
+                if (err) {
+                    return res.json(returnError(JSON.stringify(err)))
+                }
+
+                res.json({
+                    message: 'Apointment by User',
+                    success: true,
+                    data: data
+                })
+            })
         } else {
-            Appointment.find({})
-                .populate('user serviceType pet')
+            
+            let options = {}
+
+            if (req.params.from && req.params.to) {
+                options = {
+                    date: {
+                        $gte: req.params.from,
+                        $lte: req.params.to 
+                    }
+                }
+            }
+
+            Appointment.find(options)
+                .populate('user serviceType pet attendedBy')
+                .sort({date: -1})
                 .exec((err, data) => {
                     if (err) {
                         return res.json(returnError(JSON.stringify(err)))
@@ -164,7 +209,7 @@ module.exports = () => {
         let m = req.params.m
         let d = req.params.d
 
-        Appointment.find({ y: y, m: m, d: d, status: { $ne: 'Cancelled'} }, '-_id time' , (err, data) => {
+        Appointment.find({ y: y, m: m, d: d, status: { $ne: 'Cancelled' } }, '-_id time', (err, data) => {
             if (err) {
                 res.json([])
             } else {
@@ -178,7 +223,7 @@ module.exports = () => {
         let serviceType = mongoose.Types.ObjectId(req.params.serviceType)
         let weekDay = req.params.weekDay
 
-        Staff.count({capabilities: serviceType, availability: weekDay}, (err, data) => {
+        Staff.count({ capabilities: serviceType, availability: weekDay }, (err, data) => {
             if (err) {
                 return res.json(returnError(JSON.stringify(err)))
             }
