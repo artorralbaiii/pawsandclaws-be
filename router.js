@@ -15,6 +15,7 @@ module.exports = (express) => {
     api.get('/appointment/:id', controller.getAppointments)
     api.get('/appointment/:from/:to', controller.getAppointments)
     api.get('/appointment', controller.getAppointments)
+    api.get('/client', controller.getClients)
     api.get('/config', controller.getConfig)
     api.get('/pet/:id', controller.getPets)
     api.get('/pet/user/:userid', controller.getPets)

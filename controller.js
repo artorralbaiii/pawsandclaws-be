@@ -32,6 +32,7 @@ module.exports = () => {
         getAppointmentTime: getAppointmentTime,
         getAvailableStaff: getAvailableStaff,
         getPets: getPets,
+        getClients: getClients,
         getConfig: getConfig,
         getSchedules: getSchedules,
         getServices: getServices,
@@ -67,7 +68,7 @@ module.exports = () => {
     // START - authenticate
     function authenticate(req, res) {
         User.findOne({ email: req.body.email })
-            .select('_id password firstName middleName lastName email address mobile role activated')
+            .select('_id password firstName middleName lastName email address mobile role activated photoUrl')
             .exec(function (err, data) {
                 if (err) {
                     return res.json(returnError(JSON.stringify(err)))
@@ -91,7 +92,8 @@ module.exports = () => {
                             address: data.address,
                             role: data.role,
                             email: data.email,
-                            activated: data.activated
+                            activated: data.activated,
+                            photoUrl: data.photoUrl
                         }
 
                         res.json({
@@ -264,6 +266,34 @@ module.exports = () => {
 
 
     } // END - getPets
+
+    function getClients(req, res) {
+        if (req.params.id) {
+            User.findById(req.params.id, (err, data) => {
+                if (err) {
+                    return res.json(returnError(JSON.stringify(err)))
+                }
+
+                res.json({
+                    message: 'User by ID',
+                    success: true,
+                    data: data
+                })
+            })
+        } else {
+            User.find({}, (err, data) => {
+                if (err) {
+                    return res.json(returnError(JSON.stringify(err)))
+                }
+
+                res.json({
+                    message: 'All Clients',
+                    success: true,
+                    data: data
+                })
+            })
+        }
+    }
 
     // START - getConfig
     function getConfig(req, res) {
