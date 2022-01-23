@@ -4,6 +4,7 @@ const Pet = require('./models/pet')
 const Schedule = require('./models/schedule')
 const Service = require('./models/service')
 const ServiceType = require('./models/servicetype')
+const Specie = require('./models/specie')
 const Staff = require('./models/staff')
 const User = require('./models/user')
 const utils = require('./utils')
@@ -31,13 +32,14 @@ module.exports = () => {
         getAppointments: getAppointments,
         getAppointmentTime: getAppointmentTime,
         getAvailableStaff: getAvailableStaff,
-        getPets: getPets,
         getClients: getClients,
         getConfig: getConfig,
         getSchedules: getSchedules,
+        getPets: getPets,
         getServices: getServices,
         getServiceTypes: getServiceTypes,
         getSession: getSession,
+        getSpecies: getSpecies, 
         getStaffs: getStaffs,
         getUser: getUser,
         logout: logout,
@@ -49,6 +51,7 @@ module.exports = () => {
         saveSchedule: saveSchedule,
         saveServices: saveServices,
         saveServiceType: saveServiceType,
+        saveSpecie: saveSpecie,
         saveStaff: saveStaff,
         saveUser: saveUser,
         setupPassword: setupPassword,
@@ -115,7 +118,7 @@ module.exports = () => {
 
         if (req.params.userid) {
             Appointment.find({ user: mongoose.Types.ObjectId(req.params.userid) })
-                .populate('user serviceType pet')
+                .populate('user serviceType pet attendedBy')
                 .sort({date: -1})
                 .exec((err, data) => {
                     if (err) {
@@ -170,6 +173,21 @@ module.exports = () => {
 
                 res.json({
                     message: 'Apointment by User',
+                    success: true,
+                    data: data
+                })
+            })
+        } else if (req.params.petId) {
+            Appointment.find({ pet: mongoose.Types.ObjectId(req.params.petId), status: 'Completed' })
+            .populate('user serviceType pet attendedBy')
+            .sort({date: -1})
+            .exec((err, data) => {
+                if (err) {
+                    return res.json(returnError(JSON.stringify(err)))
+                }
+
+                res.json({
+                    message: 'Apointment by Pet',
                     success: true,
                     data: data
                 })
@@ -281,7 +299,7 @@ module.exports = () => {
                 })
             })
         } else {
-            User.find({}, (err, data) => {
+            User.find({role: 'CLIENT'}, (err, data) => {
                 if (err) {
                     return res.json(returnError(JSON.stringify(err)))
                 }
@@ -403,6 +421,21 @@ module.exports = () => {
         }
 
     } // END - getSession
+
+    // START - getSpecies
+    function getSpecies(req, res) {
+        Specie.find({},(err, data) => {
+            if (err) {
+                return res.json(returnError(JSON.stringify(err)))
+            }
+
+            res.json({
+                message: 'All Species',
+                success: true,
+                data: data
+            })
+        })
+    } // END - getSpecies
 
     // START - getStaffs
     function getStaffs(req, res) {
@@ -786,6 +819,34 @@ module.exports = () => {
         })
 
     } // END - saveUser
+
+    // START - saveSpecie
+    function saveSpecie(req, res) {
+        let id = null;
+
+        if (req.params.id) {
+            id = mongoose.Types.ObjectId(req.params.id);
+        }
+
+        Specie.findOneAndUpdate(
+            { _id: mongoose.Types.ObjectId(id) },
+            req.body,
+            { upsert: true, new: true },
+            (err, data) => {
+
+                if (err) {
+                    res.json(returnError(JSON.stringify(err)))
+                } else {
+
+                    res.json({
+                        message: 'Successful Save',
+                        success: true,
+                        data: data
+                    })
+
+                }
+            })
+    } // END - saveSpecie
 
     // START - saveStaff
     function saveStaff(req, res) {
