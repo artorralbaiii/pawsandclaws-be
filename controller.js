@@ -1,5 +1,6 @@
 const Config = require('./models/configuration')
 const Appointment = require('./models/appointment')
+const Audit = require('./models/audit')
 const Pet = require('./models/pet')
 const Schedule = require('./models/schedule')
 const Service = require('./models/service')
@@ -17,6 +18,29 @@ const { trusted } = require('mongoose')
 
 sgMail.setApiKey(process.env.SG_API_KEY)
 
+const LOG_ACTION = {
+    APPOINTMENT_NEW: 'Appointment - New Data',
+    APPOINTMENT_ATTENDED: 'Appointment - Service Attended',
+    CONFIGURATION: 'Configuration',
+    LOGIN: 'Login',
+    LOGIN_SOCIAL: 'Login - Social Media',
+    LOGOUT: 'Logout',
+    NEW_CLIENT: 'New Client',
+    PASSWORD_SETUP: 'Password Setup',
+    PET_NEW: 'Pet - New Data',
+    PET_REGISTRATION: 'Pet - Registration',
+    PET_UPDATE: 'Pet - Update Data',
+    SERVICES_NEW: 'Services - New Data',
+    SERVICES_UPDATE: 'Services - Update Data',
+    SPECIE_UPDATE: 'Specie - Update Data',
+    STAFF_NEW: 'Staff - New Data',
+    STAFF_UPDATE: 'Staff - Update Data',
+}
+
+
+
+
+
 
 let returnError = (message) => {
     return { message: message, success: false, data: null }
@@ -31,15 +55,17 @@ module.exports = () => {
         authenticate: authenticate,
         getAppointments: getAppointments,
         getAppointmentTime: getAppointmentTime,
+        getAuditLogs: getAuditLogs,
         getAvailableStaff: getAvailableStaff,
         getClients: getClients,
         getConfig: getConfig,
+        getLogActions: getLogActions,
         getSchedules: getSchedules,
         getPets: getPets,
         getServices: getServices,
         getServiceTypes: getServiceTypes,
         getSession: getSession,
-        getSpecies: getSpecies, 
+        getSpecies: getSpecies,
         getStaffs: getStaffs,
         getUser: getUser,
         logout: logout,
@@ -87,7 +113,7 @@ module.exports = () => {
                     req.session.regenerate(() => {
 
                         req.session.user = {
-                            id: data._id,
+                            _id: data._id,
                             firstName: data.firstName,
                             middleName: data.middelName,
                             lastName: data.lastName,
@@ -98,6 +124,12 @@ module.exports = () => {
                             activated: data.activated,
                             photoUrl: data.photoUrl
                         }
+
+                        auditTrail(
+                            data._id,
+                            LOG_ACTION.LOGIN,
+                            'Login to the application'
+                        )
 
                         res.json({
                             message: 'Authenticated',
@@ -119,7 +151,7 @@ module.exports = () => {
         if (req.params.userid) {
             Appointment.find({ user: mongoose.Types.ObjectId(req.params.userid) })
                 .populate('user serviceType pet attendedBy')
-                .sort({date: -1})
+                .sort({ date: -1 })
                 .exec((err, data) => {
                     if (err) {
                         return res.json(returnError(JSON.stringify(err)))
@@ -135,7 +167,7 @@ module.exports = () => {
             var id = mongoose.Types.ObjectId(req.params.id)
             Appointment.findOne({ _id: id })
                 .populate('user serviceType pet attendedBy')
-                .sort({date: -1})
+                .sort({ date: -1 })
                 .exec((err, data) => {
                     if (err) {
                         return res.json(returnError(JSON.stringify(err)))
@@ -158,56 +190,56 @@ module.exports = () => {
                     status: req.params.status,
                     date: {
                         $gte: req.params.from,
-                        $lte: req.params.to 
-                    }
-                }
-            }
-
-            Appointment.find(options)
-            .populate('user serviceType pet attendedBy')
-            .sort({date: -1})
-            .exec((err, data) => {
-                if (err) {
-                    return res.json(returnError(JSON.stringify(err)))
-                }
-
-                res.json({
-                    message: 'Apointment by User',
-                    success: true,
-                    data: data
-                })
-            })
-        } else if (req.params.petId) {
-            Appointment.find({ pet: mongoose.Types.ObjectId(req.params.petId), status: 'Completed' })
-            .populate('user serviceType pet attendedBy')
-            .sort({date: -1})
-            .exec((err, data) => {
-                if (err) {
-                    return res.json(returnError(JSON.stringify(err)))
-                }
-
-                res.json({
-                    message: 'Apointment by Pet',
-                    success: true,
-                    data: data
-                })
-            })
-        } else {
-            
-            let options = {}
-
-            if (req.params.from && req.params.to) {
-                options = {
-                    date: {
-                        $gte: req.params.from,
-                        $lte: req.params.to 
+                        $lte: req.params.to
                     }
                 }
             }
 
             Appointment.find(options)
                 .populate('user serviceType pet attendedBy')
-                .sort({date: -1})
+                .sort({ date: -1 })
+                .exec((err, data) => {
+                    if (err) {
+                        return res.json(returnError(JSON.stringify(err)))
+                    }
+
+                    res.json({
+                        message: 'Apointment by User',
+                        success: true,
+                        data: data
+                    })
+                })
+        } else if (req.params.petId) {
+            Appointment.find({ pet: mongoose.Types.ObjectId(req.params.petId), status: 'Completed' })
+                .populate('user serviceType pet attendedBy')
+                .sort({ date: -1 })
+                .exec((err, data) => {
+                    if (err) {
+                        return res.json(returnError(JSON.stringify(err)))
+                    }
+
+                    res.json({
+                        message: 'Apointment by Pet',
+                        success: true,
+                        data: data
+                    })
+                })
+        } else {
+
+            let options = {}
+
+            if (req.params.from && req.params.to) {
+                options = {
+                    date: {
+                        $gte: req.params.from,
+                        $lte: req.params.to
+                    }
+                }
+            }
+
+            Appointment.find(options)
+                .populate('user serviceType pet attendedBy')
+                .sort({ date: -1 })
                 .exec((err, data) => {
                     if (err) {
                         return res.json(returnError(JSON.stringify(err)))
@@ -236,6 +268,52 @@ module.exports = () => {
                 res.json(data.map(val => val.time))
             }
         })
+    }
+
+    function getAuditLogs(req, res) {
+        let user = req.params.user
+        let action = req.params.action
+        let from = req.params.from
+        let to = req.params.to
+        let option = {}
+        let populateOption = {}
+
+
+        populateOption['path'] = 'user'
+
+        if (user) {
+            populateOption['match'] = {
+                email: user
+            }
+        }
+
+        if (action) {
+            option['action'] = action
+        }
+
+        if ((from) && (to)) {
+            option['createdAt'] = {
+                $gte: req.params.from + ' 00:00 AM',
+                $lte: req.params.to + ' 11:59 PM'
+            }
+        }
+
+        Audit.find(option)
+            .sort({ date: -1 })
+            .populate(populateOption)
+            .exec((err, data) => {
+                if (err) {
+                    return res.json(returnError(JSON.stringify(err)))
+                }
+
+                let filteredData = data.filter(obj=> obj.user != null)
+
+                res.json({
+                    message: 'All Audit Logs',
+                    success: true,
+                    data: filteredData
+                })
+            })
     }
 
     // START - getAvailableStaff
@@ -299,7 +377,7 @@ module.exports = () => {
                 })
             })
         } else {
-            User.find({role: 'CLIENT'}, (err, data) => {
+            User.find({ role: 'CLIENT' }, (err, data) => {
                 if (err) {
                     return res.json(returnError(JSON.stringify(err)))
                 }
@@ -330,6 +408,19 @@ module.exports = () => {
         })
 
     } // END - getConfig
+
+    function getLogActions(req, res) {
+        let logActions = []
+        for (const key in LOG_ACTION) {
+            logActions.push(LOG_ACTION[key])
+        }
+
+        res.json({
+            message: 'All Log Actions',
+            success: true,
+            data: logActions
+        })
+    }
 
     // START - getSchedules
     function getSchedules(req, res) {
@@ -424,7 +515,7 @@ module.exports = () => {
 
     // START - getSpecies
     function getSpecies(req, res) {
-        Specie.find({},(err, data) => {
+        Specie.find({}, (err, data) => {
             if (err) {
                 return res.json(returnError(JSON.stringify(err)))
             }
@@ -473,28 +564,51 @@ module.exports = () => {
     function getUser(req, res) {
         let id = req.params.id
 
-        User.findById(id, (err, data) => {
-            if (err) {
-                return res.json(returnError(JSON.stringify(err)))
-            }
+        if (id) {
+            User.findById(id, (err, data) => {
+                if (err) {
+                    return res.json(returnError(JSON.stringify(err)))
+                }
 
-            res.json({
-                message: 'Successful Retrieval',
-                success: true,
-                data: data
+                res.json({
+                    message: 'Users by ID',
+                    success: true,
+                    data: data
+                })
             })
-        })// END - getUser
+        } else {
+            User.find({}, (err, data) => {
+                if (err) {
+                    return res.json(returnError(JSON.stringify(err)))
+                }
+
+                res.json({
+                    message: 'All users',
+                    success: true,
+                    data: data
+                })
+            })
+        }
 
 
-    }
+    } // END - getUser
 
 
 
     function logout(req, res) {
+        console.log('req.session.user')
+        console.log(req.session.user)
+        let id = req.session.user._id
         req.session.destroy(function (err) {
             if (err) {
                 return res.json(returnError(JSON.stringify(err)))
             }
+
+            auditTrail(
+                id,
+                LOG_ACTION.LOGOUT,
+                'Logout to the application.'
+            )
 
             res.json({
                 message: 'Successful Logout',
@@ -542,6 +656,20 @@ module.exports = () => {
                     res.json(returnError(JSON.stringify(err)))
                 } else {
 
+                    if (id) {
+                        auditTrail(
+                            req.session.user._id,
+                            LOG_ACTION.PET_UPDATE,
+                            'Update pet data for Pet ID: ' + id
+                        )
+                    } else {
+                        auditTrail(
+                            req.session.user._id,
+                            LOG_ACTION.PET_NEW,
+                            'New pet data is added. Pet ID:' + data._id
+                        )
+                    }
+
                     res.json({
                         message: 'Successful Save',
                         success: true,
@@ -582,6 +710,22 @@ module.exports = () => {
             req.body,
             { upsert: true, new: true },
             (err, data) => {
+
+                if (id) {
+                    if (data.status.toUpperCase() === 'COMPLETED') {
+                        auditTrail(
+                            req.session.user._id,
+                            LOG_ACTION.APPOINTMENT_ATTENDED,
+                            'A service appointment has been attended. Appointment ID: ' + id
+                        )
+                    }
+                } else {
+                    auditTrail(
+                        req.session.user._id,
+                        LOG_ACTION.APPOINTMENT_NEW,
+                        'New appointment has been created. Appointment id: ' + id
+                    )
+                }
 
                 if (err) {
                     res.json(returnError(JSON.stringify(err)))
@@ -676,6 +820,13 @@ module.exports = () => {
                 if (err) {
                     res.json(returnError(JSON.stringify(err)))
                 } else {
+
+                    auditTrail(
+                        req.session.user._id,
+                        LOG_ACTION.CONFIGURATION,
+                        'Application configuration has been updated.'
+                    )
+
                     res.json({
                         message: 'Successful Save',
                         success: true,
@@ -753,6 +904,21 @@ module.exports = () => {
                     res.json(returnError(JSON.stringify(err)))
                 } else {
 
+                    if (id) {
+                        auditTrail(
+                            req.session.user._id,
+                            LOG_ACTION.SERVICES_UPDATE,
+                            'Update services data for Service ID: ' + id
+                        )
+                    } else {
+                        auditTrail(
+                            req.session.user._id,
+                            LOG_ACTION.SERVICES_NEW,
+                            'New service data is added. Service ID:' + id
+                        )
+                    }
+
+
                     res.json({
                         message: 'Successful Save',
                         success: true,
@@ -775,6 +941,12 @@ module.exports = () => {
             } else {
 
                 if (req.path.indexOf('login') >= 0) {
+
+                    auditTrail(
+                        data._id,
+                        LOG_ACTION.NEW_CLIENT,
+                        'New client ha been registered. User ID: ' + data._id
+                    )
 
                     let url = process.env.VERIFICATION_URL + data['verificationCode']
                     const message = {
@@ -838,6 +1010,20 @@ module.exports = () => {
                     res.json(returnError(JSON.stringify(err)))
                 } else {
 
+                    if (id) {
+                        auditTrail(
+                            req.session.user._id,
+                            LOG_ACTION.SPECIE_UPDATE,
+                            'Update specie data for Specie ID: ' + id
+                        )
+                    } else {
+                        auditTrail(
+                            req.session.user._id,
+                            LOG_ACTION.STAFF_NEW,
+                            'New specie data is added. Specie ID:' + id
+                        )
+                    }
+
                     res.json({
                         message: 'Successful Save',
                         success: true,
@@ -859,6 +1045,12 @@ module.exports = () => {
                 if (err) {
                     res.json(returnError(JSON.stringify(err)))
                 } else {
+
+                    auditTrail(
+                        req.session.user._id,
+                        LOG_ACTION.STAFF_UPDATE,
+                        'Update staff data for Staff ID: ' + data._id
+                    )
 
                     data.populate('capabilities')
                         .then((data) => {
@@ -893,6 +1085,13 @@ module.exports = () => {
                         if (err) {
                             res.json(returnError(JSON.stringify(err)))
                         } else {
+
+                            auditTrail(
+                                dataUser._id,
+                                LOG_ACTION.STAFF_NEW,
+                                'New staff data is added. Staff ID: ' + data._id
+                            )
+
                             let url = process.env.CLIENT_HOST + '/setup-password/' + dataUser._id
 
                             const message = {
@@ -954,6 +1153,13 @@ module.exports = () => {
                         if (err1) {
                             return res.json(returnError(JSON.stringify(err1)))
                         } else {
+
+                            auditTrail(
+                                req.params.id,
+                                LOG_ACTION.PASSWORD_SETUP,
+                                'Initial password setup'
+                            )
+
                             return res.json({
                                 message: 'Successful Save',
                                 success: true,
@@ -979,6 +1185,12 @@ module.exports = () => {
                     req.session.regenerate(() => {
                         req.session.user = data;
 
+                        auditTrail(
+                            data._id,
+                            LOG_ACTION.LOGIN_SOCIAL,
+                            'Login to the application using Social Media'
+                        )
+
                         res.json({
                             message: 'Authenticated',
                             success: true,
@@ -991,10 +1203,28 @@ module.exports = () => {
 
     // START - updatePet
     function updatePet(req, res) {
+
+        let id = req.params.id
+
         Pet.findByIdAndUpdate(req.params.id, req.body, { upsert: false }, (err, data) => {
             if (err) {
                 res.json(returnError(JSON.stringify(err)))
             } else {
+
+                if (id) {
+                    auditTrail(
+                        req.session.user._id,
+                        LOG_ACTION.PET_UPDATE,
+                        'Update pet data for Pet ID: ' + id
+                    )
+                } else {
+                    auditTrail(
+                        dreq.session.user._id,
+                        LOG_ACTION.PET_REGISTRATION,
+                        'Added new pet. Pet ID: ' + data._id
+                    )
+                }
+
                 res.json({
                     message: 'Successfully updated',
                     success: true,
@@ -1020,6 +1250,16 @@ module.exports = () => {
 
     }
 
+}
+
+function auditTrail(user, action, description) {
+    if (user) {
+        new Audit({
+            user: mongoose.Types.ObjectId(user),
+            action: action,
+            description: description
+        }).save();
+    }
 }
 
 

@@ -8,6 +8,8 @@ module.exports = (express) => {
     
     // Main Features
     
+    
+    api.get('/action', controller.getLogActions)
     api.get('/appointment/user/:userid', controller.getAppointments)
     api.get('/appointment/date/:y/:m/:d', controller.getAppointmentTime)
     api.get('/appointment/status/:status/:from/:to', controller.getAppointments)
@@ -16,6 +18,11 @@ module.exports = (express) => {
     api.get('/appointment/:id', controller.getAppointments)
     api.get('/appointment/:from/:to', controller.getAppointments)
     api.get('/appointment', controller.getAppointments)
+    api.get('/audit/from/:from/to/:to/user/:user/action/:action', controller.getAuditLogs)
+    api.get('/audit/from/:from/to/:to/action/:action', controller.getAuditLogs)
+    api.get('/audit/from/:from/to/:to/user/:user', controller.getAuditLogs)
+    api.get('/audit/from/:from/to/:to', controller.getAuditLogs)
+    api.get('/audit', controller.getAuditLogs)
     api.get('/client', controller.getClients)
     api.get('/config', controller.getConfig)
     api.get('/pet/:id', controller.getPets)
@@ -32,6 +39,7 @@ module.exports = (express) => {
     api.get('/staff/:id', controller.getStaffs)
     api.get('/staff/count/:serviceType/:weekDay', controller.getAvailableStaff)
     api.get('/user/:id', controller.getUser)
+    api.get('/user', controller.getUser)
     api.get('/user/verification/:id', controller.verifyAccount)
     api.get('/user/verification/resend/:id', controller.resendEmailVerification)
 
