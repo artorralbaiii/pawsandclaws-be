@@ -812,6 +812,8 @@ module.exports = () => {
                 data.excludeTime = req.body.excludeTime
                 data.excludeDays = req.body.excludeDays
                 data.excludeDates = req.body.excludeDates
+                data.colors = req.body.colors
+                data.cancelWindow = req.body.cancelWindow
             } else {
                 data = new Config(req.body)
             }

@@ -6,7 +6,9 @@ let config = new Schema({
     endTime: { type: Number },
     excludeTime: [{ type: Number }],
     excludeDays: [{ type: Number }],
-    excludeDates: [{ type: Date }]
+    excludeDates: [{ type: Date }],
+    colors: [{ type: String }],
+    cancelWindow: {type: Number, default: 1}
 })
 
 module.exports = mongoose.model('Config', config);
