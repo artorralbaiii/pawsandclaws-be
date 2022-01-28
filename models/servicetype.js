@@ -5,7 +5,8 @@ let serviceType = new Schema({
     service: {type: Schema.Types.ObjectId, ref: 'Service'},
     serviceType: { type: String, required: true },
     duration: { type: Number },
-    examinationForm: { type: Boolean }
+    examinationForm: { type: Boolean },
+    agreementForm: { type: String }
 },
 {
   timestamps: true

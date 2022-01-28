@@ -1,5 +1,6 @@
 const mongoose = require('mongoose')
 const Schema = mongoose.Schema;
+const moment = require('moment-timezone');
 
 let appointment = new Schema({
     pet: { type: Schema.Types.ObjectId, ref: 'Pet' },
@@ -22,5 +23,13 @@ let appointment = new Schema({
     {
         timestamps: true
     })
+
+appointment.pre('save', function (next) {
+    let currentAppointment = this;
+    currentAppointment.date.setHours(0,0,0,0);
+    currentAppointment.date = moment.tz(currentAppointment.date, 'Asia/Manila');
+
+    next()
+}); 
 
 module.exports = mongoose.model('Appointment', appointment);
