@@ -18,7 +18,8 @@ let appointment = new Schema({
     peFindings: { type: String },
     medications: { type: String },
     notes: { type: String },
-    dateAttended: { type: Date }
+    dateAttended: { type: Date },
+    followUp: { type: Date }
 },
     {
         timestamps: true
@@ -28,6 +29,16 @@ appointment.pre('save', function (next) {
     let currentAppointment = this;
     currentAppointment.date.setHours(0,0,0,0);
     currentAppointment.date = moment.tz(currentAppointment.date, 'Asia/Manila');
+
+    console.log('FOLLOWUP - START');
+
+    if (currentAppointment.followUp) {
+        currentAppointment.followUp.setHours(0,0,0,0);
+        currentAppointment.followUp = moment.tz(currentAppointment.followUp, 'Asia/Manila');
+
+        console.log(currentAppointment.followUp);
+    }
+    console.log('FOLLOWUP - END');
 
     next()
 }); 
