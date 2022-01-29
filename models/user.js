@@ -15,7 +15,8 @@ let user = new Schema({
     role: { type: String, default: 'CLIENT' },
     photoUrl: { type: String, default: 'assets/images/icons8-test-account-40.png' },
     activated: { type: Boolean, default: false },
-    verificationCode: { type: String }
+    verificationCode: { type: String },
+    staffId: { type: Number }
 },
     {
         timestamps: true

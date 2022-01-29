@@ -97,7 +97,7 @@ module.exports = () => {
     // START - authenticate
     function authenticate(req, res) {
         User.findOne({ email: req.body.email })
-            .select('_id password firstName middleName lastName email address mobile role activated photoUrl')
+            .select('_id password firstName middleName lastName email address mobile role activated photoUrl mobile staffId')
             .exec(function (err, data) {
                 if (err) {
                     return res.json(returnError(JSON.stringify(err)))
@@ -122,7 +122,8 @@ module.exports = () => {
                             role: data.role,
                             email: data.email,
                             activated: data.activated,
-                            photoUrl: data.photoUrl
+                            photoUrl: data.photoUrl,
+                            staffId: data.staffId
                         }
 
                         auditTrail(
@@ -543,6 +544,19 @@ module.exports = () => {
                         data: data
                     })
                 })
+        } else if (req.params.staffid) {
+            Staff.findOne({staffId: req.params.staffid})
+            .populate('capabilities').exec((err, data) => {
+                if (err) {
+                    return res.json(returnError(JSON.stringify(err)))
+                }
+
+                res.json({
+                    message: 'Staff by Staff Id',
+                    success: true,
+                    data: data
+                })
+            })
         } else {
             Staff.find({})
                 .populate('capabilities').exec((err, data) => {
@@ -1079,7 +1093,10 @@ module.exports = () => {
                         password: data.email,
                         role: 'STAFF',
                         activated: false,
-                        verificationCode: uuid.v1()
+                        verificationCode: uuid.v1(),
+                        photoUrl: '',
+                        staffId: data.staffId,
+                        mobile: data.mobile    
                     })
 
                     user.save((err, dataUser) => {

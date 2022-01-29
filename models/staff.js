@@ -9,7 +9,8 @@ let staff = new Schema({
   position: { type: String, required: true },
   capabilities: [{ type: Schema.Types.ObjectId, ref: 'ServiceType' }],
   staffId: Number,
-  availability: [{ type: Number }]
+  availability: [{ type: Number }],
+  mobile: { type: String, required: true }
 },
   {
     timestamps: true
