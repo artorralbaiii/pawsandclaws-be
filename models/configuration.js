@@ -8,7 +8,9 @@ let config = new Schema({
     excludeDays: [{ type: Number }],
     excludeDates: [{ type: Date }],
     colors: [{ type: String }],
-    cancelWindow: {type: Number, default: 1}
+    cancelWindow: {type: Number, default: 1},
+    notificationWindow: {type: Number, default: 1},
+    notificationMessage: {type: String}
 })
 
 module.exports = mongoose.model('Config', config);

@@ -828,6 +828,8 @@ module.exports = () => {
                 data.excludeDates = req.body.excludeDates
                 data.colors = req.body.colors
                 data.cancelWindow = req.body.cancelWindow
+                data.notificationWindow = req.body.notificationWindow
+                data.notificationMessage = req.body.notificationMessage
             } else {
                 data = new Config(req.body)
             }
