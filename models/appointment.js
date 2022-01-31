@@ -19,7 +19,8 @@ let appointment = new Schema({
     medications: { type: String },
     notes: { type: String },
     dateAttended: { type: Date },
-    followUp: { type: Date }
+    followUp: { type: Date },
+    isNotified: { type: Boolean, defult: false }
 },
     {
         timestamps: true
