@@ -28,6 +28,8 @@ module.exports = (express) => {
     api.get('/pet/:id', controller.getPets)
     api.get('/pet/user/:userid', controller.getPets)
     api.get('/pet-count/:id', controller.petCount)
+    api.get('/report/client', controller.getClientsRpt)
+    api.get('/report/client/:from/:to', controller.getClientsRpt)
     api.get('/schedule', controller.getSchedules)
     api.get('/service-type', controller.getServiceTypes)
     api.get('/service-type/:id', controller.getServiceTypes)

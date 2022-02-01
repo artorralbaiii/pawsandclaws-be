@@ -37,11 +37,6 @@ const LOG_ACTION = {
     STAFF_UPDATE: 'Staff - Update Data',
 }
 
-
-
-
-
-
 let returnError = (message) => {
     return { message: message, success: false, data: null }
 }
@@ -57,6 +52,7 @@ module.exports = () => {
         getAppointmentTime: getAppointmentTime,
         getAuditLogs: getAuditLogs,
         getAvailableStaff: getAvailableStaff,
+        getClientsRpt: getClientsRpt,
         getClients: getClients,
         getConfig: getConfig,
         getLogActions: getLogActions,
@@ -307,7 +303,7 @@ module.exports = () => {
                     return res.json(returnError(JSON.stringify(err)))
                 }
 
-                let filteredData = data.filter(obj=> obj.user != null)
+                let filteredData = data.filter(obj => obj.user != null)
 
                 res.json({
                     message: 'All Audit Logs',
@@ -363,6 +359,82 @@ module.exports = () => {
 
 
     } // END - getPets
+
+    function getClientsRpt(req, res) {
+
+        let appointmetFilter = {
+            $expr: { $eq: ["$$user_id", "$user"] },
+            status: 'Completed'
+        }
+        console.log(req.params.from)
+        console.log(req.params.to)
+
+
+        if (req.params.from && req.params.to) {
+            appointmetFilter = {
+                expr: { $eq: ['$$user_id', '$user'] },
+                status: 'Completed',
+                date: {
+                    $gte: req.params.from,
+                    $lte: req.params.to
+                }
+            }
+        }
+
+        console.log(appointmetFilter)
+
+
+        User.aggregate(
+            [
+                { $match: { role: 'CLIENT' } },
+                {
+                    $lookup: {
+                        from: 'pets',
+                        let: { user_id: "$_id" },
+                        pipeline: [
+                            {
+                                $match: {
+                                    $expr: { $eq: ["$$user_id", "$user"] }
+                                }
+                            }
+                        ],
+                        as: 'pets'
+                    }
+                },
+                {
+                    $lookup: {
+                        from: 'appointments',
+                        let: { user_id: "$_id" },
+                        pipeline: [
+                            {
+                                $match: appointmetFilter
+                            }
+                        ],
+                        as: 'appointments'
+                    }
+                },
+                {
+                    $project: {
+                        firstName: '$firstName',
+                        lastName: '$lastName',
+                        email: '$email',
+                        mobile: '$mobile',
+                        pets: { $size: '$pets' },
+                        appointments: { $size: '$appointments' }
+                    }
+                }
+            ], (err, data) => {
+                if (err) {
+                    return res.json(returnError(JSON.stringify(err)))
+                }
+
+                res.json({
+                    message: 'Client Records',
+                    success: true,
+                    data: data
+                })
+            })
+    }
 
     function getClients(req, res) {
         if (req.params.id) {
@@ -545,18 +617,18 @@ module.exports = () => {
                     })
                 })
         } else if (req.params.staffid) {
-            Staff.findOne({staffId: req.params.staffid})
-            .populate('capabilities').exec((err, data) => {
-                if (err) {
-                    return res.json(returnError(JSON.stringify(err)))
-                }
+            Staff.findOne({ staffId: req.params.staffid })
+                .populate('capabilities').exec((err, data) => {
+                    if (err) {
+                        return res.json(returnError(JSON.stringify(err)))
+                    }
 
-                res.json({
-                    message: 'Staff by Staff Id',
-                    success: true,
-                    data: data
+                    res.json({
+                        message: 'Staff by Staff Id',
+                        success: true,
+                        data: data
+                    })
                 })
-            })
         } else {
             Staff.find({})
                 .populate('capabilities').exec((err, data) => {
@@ -610,8 +682,6 @@ module.exports = () => {
 
 
     function logout(req, res) {
-        console.log('req.session.user')
-        console.log(req.session.user)
         let id = req.session.user._id
         req.session.destroy(function (err) {
             if (err) {
@@ -1098,7 +1168,7 @@ module.exports = () => {
                         verificationCode: uuid.v1(),
                         photoUrl: '',
                         staffId: data.staffId,
-                        mobile: data.mobile    
+                        mobile: data.mobile
                     })
 
                     user.save((err, dataUser) => {
@@ -1268,7 +1338,6 @@ module.exports = () => {
                 }
             }
         })
-
     }
 
 }
