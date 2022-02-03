@@ -1,5 +1,18 @@
 const controller = require('./controller')()
 
+const multer = require('multer');
+
+const storage = multer.diskStorage({
+    destination: (req, file, callBack) => {
+        callBack(null, 'uploads')
+    },
+    filename: (req, file, callBack) => {
+        callBack(null, file.originalname)
+    }
+})
+
+const upload = multer({ storage: storage })
+
 module.exports = (express) => {
     let api = express.Router()
 
@@ -36,6 +49,8 @@ module.exports = (express) => {
     api.get('/service', controller.getServices)
     api.get('/service/:id', controller.getServices)
     api.get('/session', controller.getSession)
+    api.get('/specie/breed/:breed', controller.getSpecies)
+    api.get('/specie/:id', controller.getSpecies)
     api.get('/specie', controller.getSpecies)
     api.get('/staff/staff-id/:staffid', controller.getStaffs)
     api.get('/staff/:id', controller.getStaffs)
@@ -67,6 +82,8 @@ module.exports = (express) => {
     api.post('/social-media-login', controller.socialMediaLogin)
     api.post('/user/login', controller.saveUser)
     api.post('/user', controller.saveUser)
+    api.post('/upload-image/:id', upload.array('files'), controller.uploadGroomingStyle)
+    api.post('/upload-image', upload.array('files'), controller.uploadGroomingStyle)
 
     return api
 }

@@ -7,6 +7,7 @@ const cors = require('cors')
 const session = require('express-session')
 
 
+
 mongoose.connect(process.env.MONGODB_URI,
     {}, (err) => (err) ? console.log(err) : console.log('Connected to database...'))
 
@@ -26,6 +27,8 @@ app.use(session({
 	saveUninitialized : true, 
 	resave : true
 }))
+
+app.use(express.static('uploads'))
 
 // API Router
 let api = require('./router')(express)

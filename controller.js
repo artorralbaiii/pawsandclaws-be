@@ -16,6 +16,7 @@ const sgMail = require('@sendgrid/mail')
 const { request } = require('express')
 const { trusted } = require('mongoose')
 
+
 sgMail.setApiKey(process.env.SG_API_KEY)
 
 const LOG_ACTION = {
@@ -32,6 +33,7 @@ const LOG_ACTION = {
     PET_UPDATE: 'Pet - Update Data',
     SERVICES_NEW: 'Services - New Data',
     SERVICES_UPDATE: 'Services - Update Data',
+    SPECIE_NEW: 'Specie - New Data',
     SPECIE_UPDATE: 'Specie - Update Data',
     STAFF_NEW: 'Staff - New Data',
     STAFF_UPDATE: 'Staff - Update Data',
@@ -79,6 +81,7 @@ module.exports = () => {
         setupPassword: setupPassword,
         socialMediaLogin: socialMediaLogin,
         updatePet: updatePet,
+        uploadGroomingStyle: uploadGroomingStyle,
         verifyAccount: verifyAccount
     }
 
@@ -366,9 +369,6 @@ module.exports = () => {
             $expr: { $eq: ["$$user_id", "$user"] },
             status: 'Completed'
         }
-        console.log(req.params.from)
-        console.log(req.params.to)
-
 
         if (req.params.from && req.params.to) {
             appointmetFilter = {
@@ -588,17 +588,46 @@ module.exports = () => {
 
     // START - getSpecies
     function getSpecies(req, res) {
-        Specie.find({}, (err, data) => {
-            if (err) {
-                return res.json(returnError(JSON.stringify(err)))
-            }
 
-            res.json({
-                message: 'All Species',
-                success: true,
-                data: data
+        if (req.params.id) {
+            Specie.findById(req.params.id, (err, data) => {
+                if (err) {
+                    return res.json(returnError(JSON.stringify(err)))
+                }
+    
+                res.json({
+                    message: 'All Species',
+                    success: true,
+                    data: data
+                })
             })
-        })
+        } else if (req.params.breed) {
+            Specie.findOne({breed: req.params.breed}, (err, data) => {
+                if (err) {
+                    return res.json(returnError(JSON.stringify(err)))
+                }
+    
+                res.json({
+                    message: 'Find By Bree',
+                    success: true,
+                    data: data
+                })
+            })
+        } else {
+            Specie.find({}, (err, data) => {
+                if (err) {
+                    return res.json(returnError(JSON.stringify(err)))
+                }
+    
+                res.json({
+                    message: 'All Species',
+                    success: true,
+                    data: data
+                })
+            })
+        }
+
+        
     } // END - getSpecies
 
     // START - getStaffs
@@ -1107,7 +1136,7 @@ module.exports = () => {
                     } else {
                         auditTrail(
                             req.session.user._id,
-                            LOG_ACTION.STAFF_NEW,
+                            LOG_ACTION.SPECIE_NEW,
                             'New specie data is added. Specie ID:' + id
                         )
                     }
@@ -1324,6 +1353,38 @@ module.exports = () => {
             }
         })
     } // END - updatePet
+
+    function uploadGroomingStyle(req, res) {
+        // if (err) {
+        //     return res.json(returnError(JSON.stringify(err)))
+        // }
+        const files = req.files;
+        const specieId = req.params.id
+
+        if (specieId) {
+            if (files) {
+                if (files.length > 0) {
+                    let images = files.map(item => item.filename)
+
+                    Specie.findById(specieId, (err, data) => {
+                        if (err ) return res.json(returnError(JSON.stringify(err)))
+
+                        data.images = images
+                        data.save()
+                    })
+                    
+                }
+            }
+        }
+
+        res.json({
+            message: 'Image Successfully Uploaded',
+            success: true,
+            data: files
+        })
+
+
+    }
 
     function verifyAccount(req, res) {
         let url = process.env.CLIENT_HOST + '/sign-in'
