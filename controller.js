@@ -31,6 +31,7 @@ const LOG_ACTION = {
     PET_NEW: 'Pet - New Data',
     PET_REGISTRATION: 'Pet - Registration',
     PET_UPDATE: 'Pet - Update Data',
+    PROFILE_UPDATE: 'Profile - Update Data',
     SERVICES_NEW: 'Services - New Data',
     SERVICES_UPDATE: 'Services - Update Data',
     SPECIE_NEW: 'Specie - New Data',
@@ -82,7 +83,8 @@ module.exports = () => {
         socialMediaLogin: socialMediaLogin,
         updatePet: updatePet,
         uploadGroomingStyle: uploadGroomingStyle,
-        verifyAccount: verifyAccount
+        verifyAccount: verifyAccount,
+        uploadProfilePicture: uploadProfilePicture
     }
 
     return controller
@@ -96,7 +98,7 @@ module.exports = () => {
     // START - authenticate
     function authenticate(req, res) {
         User.findOne({ email: req.body.email })
-            .select('_id password firstName middleName lastName email address mobile role activated photoUrl mobile staffId')
+            .select('_id password firstName middleName lastName email address mobile role activated photoUrl mobile staffId profilePicture')
             .exec(function (err, data) {
                 if (err) {
                     return res.json(returnError(JSON.stringify(err)))
@@ -114,7 +116,7 @@ module.exports = () => {
                         req.session.user = {
                             _id: data._id,
                             firstName: data.firstName,
-                            middleName: data.middelName,
+                            middleName: data.middleName,
                             lastName: data.lastName,
                             mobile: data.mobile,
                             address: data.address,
@@ -122,7 +124,8 @@ module.exports = () => {
                             email: data.email,
                             activated: data.activated,
                             photoUrl: data.photoUrl,
-                            staffId: data.staffId
+                            staffId: data.staffId,
+                            profilePicture: data.profilePicture
                         }
 
                         auditTrail(
@@ -1050,62 +1053,115 @@ module.exports = () => {
 
     // START - saveUser
     function saveUser(req, res) {
-        let user = new User(req.body)
 
-        user.save((err, data) => {
-            if (err) {
-                res.json(returnError(JSON.stringify(err)))
-            } else {
+        if (req.params.id) {
 
-                if (req.path.indexOf('login') >= 0) {
+            User.findById(req.params.id, (err, user)=> {
+                if (err) return res.json(returnError(JSON.stringify(err)))
 
-                    auditTrail(
-                        data._id,
-                        LOG_ACTION.NEW_CLIENT,
-                        'New client ha been registered. User ID: ' + data._id
-                    )
+                user.address = req.body.address
+                user.email = req.body.email
+                user.firstName = req.body.firstName
+                user.lastName = req.body.lastName
+                user.middleName = req.body.middleName
+                user.mobile = req.body.mobile
+                user.photoUrl = req.body.photoUrl
+                user.profilePicture = req.body.profilePicture
 
-                    let url = process.env.VERIFICATION_URL + data['verificationCode']
-                    const message = {
-                        to: data['email'],
-                        from: {
-                            name: process.env.SG_FROM_NAME,
-                            email: process.env.SG_FROM_EMAIL
-                        },
-                        subject: 'Paws and Claws: Account Registration',
-                        text: `Welcome to Paws and Claws. 
-                            
-                            You are almost there! Activate your account by clicking on the link below.
-                            
-                            ${url}
-                            `,
-                        html: `<h1>Welcome to Paws and Claws</h1>.
+                user.save((err, data)=> {
+                    if (err) return res.json(returnError(JSON.stringify(err)))
 
-                        <p><b>You are almost there!</b> Activate your account by clicking on the link below.</p>
-                        <br>
-                        <p><a href="${url}"><b>Verify Email</b></a>.</p>
-                            `
-                    }
+                    req.session.regenerate(() => {
 
-                    sgMail.send(message)
-                        .then(response => {
-                            res.json({
-                                message: 'Successful Save',
-                                success: true,
-                                data: data
-                            })
+                        req.session.user = {
+                            _id: data._id,
+                            firstName: data.firstName,
+                            middleName: data.middleName,
+                            lastName: data.lastName,
+                            mobile: data.mobile,
+                            address: data.address,
+                            role: data.role,
+                            email: data.email,
+                            activated: data.activated,
+                            photoUrl: data.photoUrl,
+                            staffId: data.staffId,
+                            profilePicture: data.profilePicture
+                        }
+
+                        auditTrail(
+                            data._id,
+                            LOG_ACTION.PROFILE_UPDATE,
+                            'Updated Profile Details'
+                        )
+
+                        res.json({
+                            message: 'Profile successfully updated.',
+                            success: true,
+                            data: data
                         })
-                        .catch(error => console.log(error.message))
-
-                } else {
-                    res.json({
-                        message: 'Successful Save',
-                        success: true,
-                        data: response
                     })
+                })
+            })
+
+        } else {
+            let user = new User(req.body)
+
+            user.save((err, data) => {
+                if (err) {
+                    res.json(returnError(JSON.stringify(err)))
+                } else {
+    
+                    if (req.path.indexOf('login') >= 0) {
+    
+                        auditTrail(
+                            data._id,
+                            LOG_ACTION.NEW_CLIENT,
+                            'New client ha been registered. User ID: ' + data._id
+                        )
+    
+                        let url = process.env.VERIFICATION_URL + data['verificationCode']
+                        const message = {
+                            to: data['email'],
+                            from: {
+                                name: process.env.SG_FROM_NAME,
+                                email: process.env.SG_FROM_EMAIL
+                            },
+                            subject: 'Paws and Claws: Account Registration',
+                            text: `Welcome to Paws and Claws. 
+                                
+                                You are almost there! Activate your account by clicking on the link below.
+                                
+                                ${url}
+                                `,
+                            html: `<h1>Welcome to Paws and Claws</h1>.
+    
+                            <p><b>You are almost there!</b> Activate your account by clicking on the link below.</p>
+                            <br>
+                            <p><a href="${url}"><b>Verify Email</b></a>.</p>
+                                `
+                        }
+    
+                        sgMail.send(message)
+                            .then(response => {
+                                res.json({
+                                    message: 'Successful Save',
+                                    success: true,
+                                    data: data
+                                })
+                            })
+                            .catch(error => console.log(error.message))
+    
+                    } else {
+                        res.json({
+                            message: 'Successful Save',
+                            success: true,
+                            data: response
+                        })
+                    }
                 }
-            }
-        })
+            })
+        }
+
 
     } // END - saveUser
 
@@ -1399,6 +1455,11 @@ module.exports = () => {
                 }
             }
         })
+    }
+
+
+    function uploadProfilePicture(req, res) {
+        res.send('Ok')
     }
 
 }

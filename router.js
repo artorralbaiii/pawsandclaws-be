@@ -7,6 +7,8 @@ const storage = multer.diskStorage({
         callBack(null, 'uploads')
     },
     filename: (req, file, callBack) => {
+        console.log('Profile id')
+        console.log(req.params.profileId)
         callBack(null, file.originalname)
     }
 })
@@ -81,7 +83,9 @@ module.exports = (express) => {
     api.post('/staff', controller.saveStaff)
     api.post('/social-media-login', controller.socialMediaLogin)
     api.post('/user/login', controller.saveUser)
+    api.post('/user/:id', controller.saveUser)
     api.post('/user', controller.saveUser)
+    api.post('/upload-image/profile/:profileId', upload.single('file'), controller.uploadGroomingStyle)
     api.post('/upload-image/:id', upload.array('files'), controller.uploadGroomingStyle)
     api.post('/upload-image', upload.array('files'), controller.uploadGroomingStyle)
 
