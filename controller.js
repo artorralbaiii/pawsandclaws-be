@@ -61,6 +61,7 @@ module.exports = () => {
         getLogActions: getLogActions,
         getSchedules: getSchedules,
         getPets: getPets,
+        getRecentAppointment: getRecentAppointment,
         getServices: getServices,
         getServiceTypes: getServiceTypes,
         getSession: getSession,
@@ -512,6 +513,24 @@ module.exports = () => {
             })
         })
     } // END - getSchedules
+
+    function getRecentAppointment(req, res) {
+        console.log(req.params.petid)
+        Appointment.findOne({status: 'Completed', pet:  mongoose.Types.ObjectId(req.params.petid)})
+            .populate('pet serviceType user attendedBy', {serviceType: 1, firstName: 1, lastName: 1}, { examinationForm: true})
+            .sort({'date': -1})
+            .exec((err, data) => {
+                if (err) {
+                    return res.json(returnError(JSON.stringify(err)))
+                }
+
+                res.json({
+                    message: 'Recent Appointment',
+                    success: true,  
+                    data: data
+                })
+            })
+    }
 
     // START - getServices
     function getServices(req, res) {
