@@ -153,7 +153,16 @@ module.exports = () => {
     function getAppointments(req, res) {
 
         if (req.params.userid) {
-            Appointment.find({ user: mongoose.Types.ObjectId(req.params.userid) })
+
+            let option = {
+                user: mongoose.Types.ObjectId(req.params.userid)
+            }
+
+            if (req.params.status) {
+                option.status = req.params.status
+            }   
+
+            Appointment.find(option)
                 .populate('user serviceType pet attendedBy')
                 .sort({ date: -1 })
                 .exec((err, data) => {
@@ -239,7 +248,7 @@ module.exports = () => {
                         $lte: req.params.to
                     }
                 }
-            }
+            }  
 
             Appointment.find(options)
                 .populate('user serviceType pet attendedBy')
