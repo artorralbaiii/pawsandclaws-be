@@ -960,6 +960,8 @@ module.exports = () => {
                 data.cancelWindow = req.body.cancelWindow
                 data.notificationWindow = req.body.notificationWindow
                 data.notificationMessage = req.body.notificationMessage
+                data.bulletinTitle = req.body.bulletinTitle
+                data.bulletinMessage = req.body.bulletinMessage
             } else {
                 data = new Config(req.body)
             }

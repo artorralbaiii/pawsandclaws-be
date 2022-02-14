@@ -10,7 +10,9 @@ let config = new Schema({
     colors: [{ type: String }],
     cancelWindow: {type: Number, default: 1},
     notificationWindow: {type: Number, default: 1},
-    notificationMessage: {type: String}
+    notificationMessage: {type: String},
+    bulletinTitle: {type: String},
+    bulletinMessage: {type: String}
 })
 
 module.exports = mongoose.model('Config', config);
