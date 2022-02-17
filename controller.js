@@ -780,9 +780,9 @@ module.exports = () => {
         })
     }
 
-
+    
     // START - registerPet
-    function registerPet(req, res) {
+    async function registerPet(req, res) {
 
         let id = null;
 
@@ -790,38 +790,44 @@ module.exports = () => {
             id = mongoose.Types.ObjectId(req.params.id);
         }
 
-        Pet.findOneAndUpdate(
-            { _id: mongoose.Types.ObjectId(id) },
-            req.body,
-            { upsert: true, new: true },
-            (err, data) => {
+        let existingRecord = await Pet.find({user: mongoose.Types.ObjectId(req.body.user), petName: { $regex: new RegExp('^' + req.body.petName.toLowerCase(), 'i') }})
 
-                if (err) {
-                    res.json(returnError(JSON.stringify(err)))
-                } else {
-
-                    if (id) {
-                        auditTrail(
-                            req.session.user._id,
-                            LOG_ACTION.PET_UPDATE,
-                            'Update pet data for Pet ID: ' + id
-                        )
+        if (existingRecord.length > 0) {
+            res.json(returnError(JSON.stringify('Pet Name already exists. Please use a different name.')))
+        } else {
+            Pet.findOneAndUpdate(
+                { _id: mongoose.Types.ObjectId(id) },
+                req.body,
+                { upsert: true, new: true },
+                (err, data) => {
+    
+                    if (err) {
+                        res.json(returnError(JSON.stringify(err)))
                     } else {
-                        auditTrail(
-                            req.session.user._id,
-                            LOG_ACTION.PET_NEW,
-                            'New pet data is added. Pet ID:' + data._id
-                        )
+    
+                        if (id) {
+                            auditTrail(
+                                req.session.user._id,
+                                LOG_ACTION.PET_UPDATE,
+                                'Update pet data for Pet ID: ' + id
+                            )
+                        } else {
+                            auditTrail(
+                                req.session.user._id,
+                                LOG_ACTION.PET_NEW,
+                                'New pet data is added. Pet ID:' + data._id
+                            )
+                        }
+    
+                        res.json({
+                            message: 'Successful Save',
+                            success: true,
+                            data: data
+                        })
+    
                     }
-
-                    res.json({
-                        message: 'Successful Save',
-                        success: true,
-                        data: data
-                    })
-
-                }
-            })
+                })
+        }
 
 
         // let pet = new Pet(req.body)
