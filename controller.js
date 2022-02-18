@@ -790,7 +790,7 @@ module.exports = () => {
             id = mongoose.Types.ObjectId(req.params.id);
         }
 
-        let existingRecord = await Pet.find({user: mongoose.Types.ObjectId(req.body.user), petName: { $regex: new RegExp('^' + req.body.petName.toLowerCase(), 'i') }})
+        let existingRecord = await Pet.find({user: mongoose.Types.ObjectId(req.body.user), petName: req.body.petName})
 
         if (existingRecord.length > 0) {
             res.json(returnError(JSON.stringify('Pet Name already exists. Please use a different name.')))
@@ -1203,7 +1203,7 @@ module.exports = () => {
 
     // START - saveSpecie
     function saveSpecie(req, res) {
-        let id = null;
+        let id = null; 
 
         if (req.params.id) {
             id = mongoose.Types.ObjectId(req.params.id);
@@ -1218,21 +1218,21 @@ module.exports = () => {
                 if (err) {
                     res.json(returnError(JSON.stringify(err)))
                 } else {
-
+ 
                     if (id) {
-                        auditTrail(
+                        auditTrail( 
                             req.session.user._id,
                             LOG_ACTION.SPECIE_UPDATE,
                             'Update specie data for Specie ID: ' + id
                         )
-                    } else {
+                    } else {    
                         auditTrail(
                             req.session.user._id,
                             LOG_ACTION.SPECIE_NEW,
                             'New specie data is added. Specie ID:' + id
                         )
-                    }
-
+                    } 
+  
                     res.json({
                         message: 'Successful Save',
                         success: true,
