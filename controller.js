@@ -60,6 +60,7 @@ module.exports = () => {
         getConfig: getConfig,
         getLogActions: getLogActions,
         getSchedules: getSchedules,
+        getServiceRpt: getServiceRpt,
         getPets: getPets,
         getRecentAppointment: getRecentAppointment,
         getServices: getServices,
@@ -160,7 +161,7 @@ module.exports = () => {
 
             if (req.params.status) {
                 option.status = req.params.status
-            }   
+            }
 
             Appointment.find(option)
                 .populate('user serviceType pet attendedBy')
@@ -248,7 +249,7 @@ module.exports = () => {
                         $lte: req.params.to
                     }
                 }
-            }  
+            }
 
             Appointment.find(options)
                 .populate('user serviceType pet attendedBy')
@@ -343,6 +344,55 @@ module.exports = () => {
         })
     } // EN - getAvailableStaff
 
+    function getServiceRpt(req, res) {
+
+        ServiceType.aggregate([
+            {
+                $lookup: {
+                    from: 'appointments',
+                    localField: '_id',
+                    foreignField: 'serviceType',
+                    pipeline: [
+                        {
+                            $match: {
+                                status: 'Completed',
+                                date: { $gte: new Date(req.params.from), $lte: new Date(req.params.to) }
+                            }
+                        }
+                    ], 
+                    as: 'appointments'
+                }
+            },
+            {
+                $lookup: {
+                    from: 'services',
+                    localField: 'service',
+                    foreignField: '_id',
+                    as: 'service'
+                }
+            },
+            {$unwind: '$service'},
+            {
+                $project: {
+                    service: '$service.serviceName',
+                    serviceType: '$serviceType',
+                    appointments: { $size: '$appointments' }
+                }
+            },
+            { $sort : { appointments : -1 } } ,
+        ], (err, data) => {
+            if (err) {
+                return res.json(returnError(JSON.stringify(err)))
+            }
+
+            res.json({
+                message: 'Services Report',
+                success: true,
+                data: data
+            })
+        })
+    }
+
     // START - getPets
     function getPets(req, res) {
 
@@ -378,6 +428,39 @@ module.exports = () => {
 
     function getClientsRpt(req, res) {
 
+        // User.find({})
+        //     .select('_id firstName lastName email mobile')
+        //     .exec((error, data) => {
+        //         if (error) {
+        //             return res.json(returnError(JSON.stringify(err)))
+        //         }
+
+        //         if (data.length > 0) {
+
+        //             const forLoop = async _ => {
+        //                 console.log('IN!!') 
+        //                 console.log(data.length)
+        //                 for (let index = 0; index < data.length; index++) {
+        //                     const element = data[index];
+
+        //                     let count = await Appointment.find({ user: mongoose.Types.ObjectId(element._id) })
+        //                         .aggregate.count('_id');
+
+        //                     console.log('count', count)
+
+        //                     data[index]['appointments'] = count
+        //                 }
+        //             }
+        //         }
+
+        //         res.json({
+        //             message: 'Client Records',
+        //             success: true,
+        //             data: data
+        //         })
+        //     })
+
+
         let appointmetFilter = {
             $expr: { $eq: ["$$user_id", "$user"] },
             status: 'Completed'
@@ -385,42 +468,33 @@ module.exports = () => {
 
         if (req.params.from && req.params.to) {
             appointmetFilter = {
-                expr: { $eq: ['$$user_id', '$user'] },
+                expr: { $eq: ['$user', '$$user_id'] },
                 status: 'Completed',
-                date: {
-                    $gte: req.params.from,
-                    $lte: req.params.to
-                }
+                date: { $gte: new Date(req.params.from), $lte: new Date(req.params.to) }
+
             }
         }
 
-        console.log(appointmetFilter)
-
+        appointmetFilter = {
+            // expr: { $eq: ['$$user_id', '$user'] },
+            status: 'Completed'
+        }
 
         User.aggregate(
             [
                 { $match: { role: 'CLIENT' } },
                 {
                     $lookup: {
-                        from: 'pets',
-                        let: { user_id: "$_id" },
+                        from: 'appointments',
+                        localField: '_id',
+                        foreignField: 'user',
+                        // let: { user_id: "$_id" },
                         pipeline: [
                             {
                                 $match: {
-                                    $expr: { $eq: ["$$user_id", "$user"] }
+                                    status: 'Completed',
+                                    date: { $gte: new Date(req.params.from), $lte: new Date(req.params.to) }
                                 }
-                            }
-                        ],
-                        as: 'pets'
-                    }
-                },
-                {
-                    $lookup: {
-                        from: 'appointments',
-                        let: { user_id: "$_id" },
-                        pipeline: [
-                            {
-                                $match: appointmetFilter
                             }
                         ],
                         as: 'appointments'
@@ -432,7 +506,6 @@ module.exports = () => {
                         lastName: '$lastName',
                         email: '$email',
                         mobile: '$mobile',
-                        pets: { $size: '$pets' },
                         appointments: { $size: '$appointments' }
                     }
                 }
@@ -525,9 +598,9 @@ module.exports = () => {
 
     function getRecentAppointment(req, res) {
         console.log(req.params.petid)
-        Appointment.findOne({status: 'Completed', pet:  mongoose.Types.ObjectId(req.params.petid)})
-            .populate('pet serviceType user attendedBy', {serviceType: 1, firstName: 1, lastName: 1}, { examinationForm: true})
-            .sort({'date': -1})
+        Appointment.findOne({ status: 'Completed', pet: mongoose.Types.ObjectId(req.params.petid) })
+            .populate('pet serviceType user attendedBy', { serviceType: 1, firstName: 1, lastName: 1 }, { examinationForm: true })
+            .sort({ 'date': -1 })
             .exec((err, data) => {
                 if (err) {
                     return res.json(returnError(JSON.stringify(err)))
@@ -535,7 +608,7 @@ module.exports = () => {
 
                 res.json({
                     message: 'Recent Appointment',
-                    success: true,  
+                    success: true,
                     data: data
                 })
             })
@@ -625,7 +698,7 @@ module.exports = () => {
                 if (err) {
                     return res.json(returnError(JSON.stringify(err)))
                 }
-    
+
                 res.json({
                     message: 'All Species',
                     success: true,
@@ -633,11 +706,11 @@ module.exports = () => {
                 })
             })
         } else if (req.params.breed) {
-            Specie.findOne({breed: req.params.breed}, (err, data) => {
+            Specie.findOne({ breed: req.params.breed }, (err, data) => {
                 if (err) {
                     return res.json(returnError(JSON.stringify(err)))
                 }
-    
+
                 res.json({
                     message: 'Find By Bree',
                     success: true,
@@ -649,7 +722,7 @@ module.exports = () => {
                 if (err) {
                     return res.json(returnError(JSON.stringify(err)))
                 }
-    
+
                 res.json({
                     message: 'All Species',
                     success: true,
@@ -658,7 +731,7 @@ module.exports = () => {
             })
         }
 
-        
+
     } // END - getSpecies
 
     // START - getStaffs
@@ -780,7 +853,7 @@ module.exports = () => {
         })
     }
 
-    
+
     // START - registerPet
     async function registerPet(req, res) {
 
@@ -790,7 +863,7 @@ module.exports = () => {
             id = mongoose.Types.ObjectId(req.params.id);
         }
 
-        let existingRecord = await Pet.find({user: mongoose.Types.ObjectId(req.body.user), petName: req.body.petName})
+        let existingRecord = await Pet.find({ user: mongoose.Types.ObjectId(req.body.user), petName: req.body.petName })
 
         if (existingRecord.length > 0) {
             res.json(returnError(JSON.stringify('Pet Name already exists. Please use a different name.')))
@@ -800,11 +873,11 @@ module.exports = () => {
                 req.body,
                 { upsert: true, new: true },
                 (err, data) => {
-    
+
                     if (err) {
                         res.json(returnError(JSON.stringify(err)))
                     } else {
-    
+
                         if (id) {
                             auditTrail(
                                 req.session.user._id,
@@ -818,13 +891,13 @@ module.exports = () => {
                                 'New pet data is added. Pet ID:' + data._id
                             )
                         }
-    
+
                         res.json({
                             message: 'Successful Save',
                             success: true,
                             data: data
                         })
-    
+
                     }
                 })
         }
@@ -1092,7 +1165,7 @@ module.exports = () => {
 
         if (req.params.id) {
 
-            User.findById(req.params.id, (err, user)=> {
+            User.findById(req.params.id, (err, user) => {
                 if (err) return res.json(returnError(JSON.stringify(err)))
 
                 user.address = req.body.address
@@ -1104,7 +1177,7 @@ module.exports = () => {
                 user.photoUrl = req.body.photoUrl
                 user.profilePicture = req.body.profilePicture
 
-                user.save((err, data)=> {
+                user.save((err, data) => {
                     if (err) return res.json(returnError(JSON.stringify(err)))
 
                     req.session.regenerate(() => {
@@ -1146,15 +1219,15 @@ module.exports = () => {
                 if (err) {
                     res.json(returnError(JSON.stringify(err)))
                 } else {
-    
+
                     if (req.path.indexOf('login') >= 0) {
-    
+
                         auditTrail(
                             data._id,
                             LOG_ACTION.NEW_CLIENT,
                             'New client ha been registered. User ID: ' + data._id
                         )
-    
+
                         let url = process.env.VERIFICATION_URL + data['verificationCode']
                         const message = {
                             to: data['email'],
@@ -1176,7 +1249,7 @@ module.exports = () => {
                             <p><a href="${url}"><b>Verify Email</b></a>.</p>
                                 `
                         }
-    
+
                         sgMail.send(message)
                             .then(response => {
                                 res.json({
@@ -1186,7 +1259,7 @@ module.exports = () => {
                                 })
                             })
                             .catch(error => console.log(error.message))
-    
+
                     } else {
                         res.json({
                             message: 'Successful Save',
@@ -1203,7 +1276,7 @@ module.exports = () => {
 
     // START - saveSpecie
     function saveSpecie(req, res) {
-        let id = null; 
+        let id = null;
 
         if (req.params.id) {
             id = mongoose.Types.ObjectId(req.params.id);
@@ -1218,21 +1291,21 @@ module.exports = () => {
                 if (err) {
                     res.json(returnError(JSON.stringify(err)))
                 } else {
- 
+
                     if (id) {
-                        auditTrail( 
+                        auditTrail(
                             req.session.user._id,
                             LOG_ACTION.SPECIE_UPDATE,
                             'Update specie data for Specie ID: ' + id
                         )
-                    } else {    
+                    } else {
                         auditTrail(
                             req.session.user._id,
                             LOG_ACTION.SPECIE_NEW,
                             'New specie data is added. Specie ID:' + id
                         )
-                    } 
-  
+                    }
+
                     res.json({
                         message: 'Successful Save',
                         success: true,
@@ -1459,12 +1532,12 @@ module.exports = () => {
                     let images = files.map(item => item.filename)
 
                     Specie.findById(specieId, (err, data) => {
-                        if (err ) return res.json(returnError(JSON.stringify(err)))
+                        if (err) return res.json(returnError(JSON.stringify(err)))
 
                         data.images = images
                         data.save()
                     })
-                    
+
                 }
             }
         }
