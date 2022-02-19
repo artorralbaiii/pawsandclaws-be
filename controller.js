@@ -53,6 +53,7 @@ module.exports = () => {
         authenticate: authenticate,
         getAppointments: getAppointments,
         getAppointmentTime: getAppointmentTime,
+        getAppointmentFollowup: getAppointmentFollowup,
         getAuditLogs: getAuditLogs,
         getAvailableStaff: getAvailableStaff,
         getClientsRpt: getClientsRpt,
@@ -87,6 +88,7 @@ module.exports = () => {
         uploadGroomingStyle: uploadGroomingStyle,
         verifyAccount: verifyAccount,
         uploadProfilePicture: uploadProfilePicture
+
     }
 
     return controller
@@ -284,6 +286,33 @@ module.exports = () => {
         })
     }
 
+    function getAppointmentFollowup(req, res) {
+
+        let options = {
+            user: mongoose.Types.ObjectId(req.params.userid),
+            status: 'Booked',
+            date: {
+                $gte: req.params.from,
+                $lte: req.params.to
+            }
+        }
+
+        Appointment.find(options)
+        .populate('serviceType pet')
+        .select('serviceType pet date')
+        .exec((err, data) => {
+            if (err) {
+                return res.json(returnError(JSON.stringify(err)))
+            }
+
+            res.json({
+                message: 'Appointment Follow ups',
+                success: true,
+                data: data
+            })
+        })
+    }
+
     function getAuditLogs(req, res) {
         let user = req.params.user
         let action = req.params.action
@@ -359,7 +388,7 @@ module.exports = () => {
                                 date: { $gte: new Date(req.params.from), $lte: new Date(req.params.to) }
                             }
                         }
-                    ], 
+                    ],
                     as: 'appointments'
                 }
             },
@@ -371,7 +400,7 @@ module.exports = () => {
                     as: 'service'
                 }
             },
-            {$unwind: '$service'},
+            { $unwind: '$service' },
             {
                 $project: {
                     service: '$service.serviceName',
@@ -379,7 +408,7 @@ module.exports = () => {
                     appointments: { $size: '$appointments' }
                 }
             },
-            { $sort : { appointments : -1 } } ,
+            { $sort: { appointments: -1 } },
         ], (err, data) => {
             if (err) {
                 return res.json(returnError(JSON.stringify(err)))
@@ -597,7 +626,6 @@ module.exports = () => {
     } // END - getSchedules
 
     function getRecentAppointment(req, res) {
-        console.log(req.params.petid)
         Appointment.findOne({ status: 'Completed', pet: mongoose.Types.ObjectId(req.params.petid) })
             .populate('pet serviceType user attendedBy', { serviceType: 1, firstName: 1, lastName: 1 }, { examinationForm: true })
             .sort({ 'date': -1 })
@@ -1041,6 +1069,7 @@ module.exports = () => {
                 data.notificationMessage = req.body.notificationMessage
                 data.bulletinTitle = req.body.bulletinTitle
                 data.bulletinMessage = req.body.bulletinMessage
+                data.notificationAppointmentWindow = req.body.notificationAppointmentWindow
             } else {
                 data = new Config(req.body)
             }

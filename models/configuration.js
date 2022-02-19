@@ -12,7 +12,8 @@ let config = new Schema({
     notificationWindow: {type: Number, default: 1},
     notificationMessage: {type: String},
     bulletinTitle: {type: String},
-    bulletinMessage: {type: String}
+    bulletinMessage: {type: String},
+    notificationAppointmentWindow: {type: Number, default: 1},
 })
 
 module.exports = mongoose.model('Config', config);
