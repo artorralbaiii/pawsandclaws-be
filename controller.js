@@ -211,6 +211,7 @@ module.exports = () => {
                 }
             }
 
+
             Appointment.find(options)
                 .populate('user serviceType pet attendedBy')
                 .sort({ date: -1 })
@@ -529,6 +530,7 @@ module.exports = () => {
                         as: 'appointments'
                     }
                 },
+                { $sort : { appointments : 1 } },
                 {
                     $project: {
                         firstName: '$firstName',
@@ -625,9 +627,48 @@ module.exports = () => {
         })
     } // END - getSchedules
 
-    function getRecentAppointment(req, res) {
-        Appointment.findOne({ status: 'Completed', pet: mongoose.Types.ObjectId(req.params.petid) })
-            .populate('pet serviceType user attendedBy', { serviceType: 1, firstName: 1, lastName: 1 }, { examinationForm: true })
+    async function getRecentAppointment(req, res) {
+
+        let pathArr = req.path.split('/')
+
+        if (pathArr[pathArr.length - 1] == 'all') {
+            Appointment.find({ status: 'Completed', pet: mongoose.Types.ObjectId(req.params.petid) })
+            .populate('pet serviceType user attendedBy', { serviceType: 1, firstName: 1, lastName: 1 })
+            .select('date pet serviceType attendedBy followUp weight peFindings medications')
+            .sort({ 'date': -1 })
+            .exec((err, data) => {
+                if (err) {
+                    return res.json(returnError(JSON.stringify(err)))
+                }
+
+                res.json({
+                    message: 'Recent Appointments - All',
+                    success: true,
+                    data: data
+                })
+            })
+        } else {
+            
+            let servicesFilter = await ServiceType.find({ examinationForm: true }, '_id');
+
+            Appointment.findOne({ status: 'Completed', pet: mongoose.Types.ObjectId(req.params.petid), serviceType: { $in: servicesFilter } })
+            // .populate('serviceType pet user attendedBy', null, { examinationForm: true })
+            .populate({
+                path: 'serviceType',
+                select: 'serviceType examinationForm'
+            })
+            .populate({
+                path: 'pet',
+                select: 'petName'
+            })
+            .populate({
+                path: 'user',
+                select: 'firstName lastName'
+            })
+            .populate({
+                path: 'attendedBy',
+                select: 'firstName lastName'
+            })
             .sort({ 'date': -1 })
             .exec((err, data) => {
                 if (err) {
@@ -640,6 +681,7 @@ module.exports = () => {
                     data: data
                 })
             })
+        }
     }
 
     // START - getServices

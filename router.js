@@ -25,6 +25,7 @@ module.exports = (express) => {
     api.get('/action', controller.getLogActions)
     api.get('/appointment/followup/:userid/:from/:to', controller.getAppointmentFollowup)
     api.get('/appointment/recent/:petid', controller.getRecentAppointment)
+    api.get('/appointment/recent/:petid/all', controller.getRecentAppointment)
     api.get('/appointment/user/:userid/status/:status', controller.getAppointments)
     api.get('/appointment/user/:userid', controller.getAppointments)
     api.get('/appointment/date/:y/:m/:d', controller.getAppointmentTime)

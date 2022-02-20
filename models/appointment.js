@@ -21,7 +21,9 @@ let appointment = new Schema({
     dateAttended: { type: Date },
     followUp: { type: Date },
     isNotified: { type: Boolean, defult: false },
-    groomingImage: { type: String }
+    groomingImage: { type: String },
+    weight: { type: Number },
+    temperature: { type: Number }
 },
     {
         timestamps: true
@@ -38,6 +40,6 @@ appointment.pre('save', function (next) {
     }
 
     next()
-}); 
+});  
 
 module.exports = mongoose.model('Appointment', appointment);
