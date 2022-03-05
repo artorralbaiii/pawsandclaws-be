@@ -6,16 +6,17 @@ const bodyParser = require('body-parser')
 const cors = require('cors')
 const session = require('express-session')
 const path = require('path')
-
+const MongoStore = require('connect-mongo')
+ 
 const html = __dirname + '/public';
 
 mongoose.connect(process.env.MONGODB_URI,
 	{}, (err) => (err) ? console.log(err) : console.log('Connected to database...'))
 
-
-
 // create a new express server
 const app = express()
+
+// app.set('trust proxy', 1)
 
 // Parse incoming request as JSON.
 app.use(bodyParser.urlencoded({ extended: false, keepExtensions: true }))
@@ -24,9 +25,15 @@ app.use(cors({ credentials: true, origin: process.env.CLIENT_HOST }));
 
 app.use(session({
 	secret: process.env.SECRET_KEY,
-	cookie: { maxAge: 60 * 60 * 1000 },
-	saveUninitialized: true,
-	resave: true
+	cookie: {
+		maxAge: 60 * 60 * 1000 * 24 * 7,
+		expires: 60 * 60 * 1000 * 24 * 7
+	},
+	saveUninitialized: false,	
+	resave: false,
+	store: MongoStore.create({
+		mongoUrl: process.env.MONGODB_URI
+    })
 }))
 
 app.use(express.static('uploads'))
