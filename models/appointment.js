@@ -6,6 +6,7 @@ let appointment = new Schema({
     pet: { type: Schema.Types.ObjectId, ref: 'Pet' },
     serviceType: { type: Schema.Types.ObjectId, ref: 'ServiceType' },
     user: { type: Schema.Types.ObjectId, ref: 'User' },
+    preferredDoctor: { type: String },
     attendedBy: { type: Schema.Types.ObjectId, ref: 'User' },
     date: { type: Date },
     status: { type: String },

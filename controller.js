@@ -59,6 +59,7 @@ module.exports = () => {
         getClientsRpt: getClientsRpt,
         getClients: getClients,
         getConfig: getConfig,
+        getDoctors: getDoctors,
         getLogActions: getLogActions,
         getSchedules: getSchedules,
         getServiceRpt: getServiceRpt,
@@ -278,7 +279,7 @@ module.exports = () => {
         let m = req.params.m
         let d = req.params.d
 
-        Appointment.find({ y: y, m: m, d: d, status: { $ne: 'Cancelled' } }, '-_id time', (err, data) => {
+        Appointment.find({ y: y, m: m, d: d, status: { $eq: 'Booked' } }, '-_id time', (err, data) => {
             if (err) {
                 res.json([])
             } else {
@@ -598,6 +599,27 @@ module.exports = () => {
         })
 
     } // END - getConfig
+
+    function getDoctors(req, res) {
+        Staff.find({position: 'Doctor'}, {staffName: 1, staffLastName: 1}, { sort: { 'staffName': 1 } }, (err, data) => {
+            if (err) {
+                return res.json(returnError(JSON.stringify(err)))
+            }
+
+            let doctors = data.map(data=> {
+                return data.staffName + ' ' + data.staffLastName
+            })
+
+            res.json({
+                message: 'Doctors',
+                success: true,
+                data: doctors
+            })
+
+
+        })
+    }
+
 
     function getLogActions(req, res) {
         let logActions = []
@@ -998,6 +1020,9 @@ module.exports = () => {
             id = mongoose.Types.ObjectId(req.params.id);
         }
 
+        console.log('req.body')
+        console.log(req.body)
+
         Appointment.findOneAndUpdate(
             { _id: mongoose.Types.ObjectId(id) },
             req.body,
@@ -1011,6 +1036,73 @@ module.exports = () => {
                             LOG_ACTION.APPOINTMENT_ATTENDED,
                             'A service appointment has been attended. Appointment ID: ' + id
                         )
+
+                        if (err) {
+                            res.json(returnError(JSON.stringify(err)))
+                        } else {
+        
+                            res.json({
+                                message: 'Successful Save',
+                                success: true,
+                                data: data
+                            })
+        
+                        }
+                    } else if (data.status.toUpperCase() === 'FOR RE-SCHEDULE') {
+                        let url = process.env.CLIENT_HOST
+
+
+                        const message = {
+                            // to: data['email'],
+                            to: 'a.r.torralba.iii@gmail.com',
+                            from: {
+                                name: process.env.SG_FROM_NAME,
+                                email: process.env.SG_FROM_EMAIL
+                            },
+                            subject: 'Paws and Claws: YOUR APPOINTMENT IS REQUESTED TO RE-SCHEDULE',
+                            text: req.body.message,
+                            html: `<p>${req.body.message}</p><br><br>
+                            <table border="1">
+                                <thead>
+                                    <th colspan="2">Appointment Details</th>
+                                </thead>
+                                <tr>
+                                    <td>Service</td>
+                                    <td>${req.body.serviceType.serviceType}</td>
+                                </tr>
+                                <tr>
+                                    <td>Pet</td>
+                                    <td>${req.body.pet.petName}</td>
+                                </tr>
+                                <tr>
+                                    <td>Original Appointment Date/Time</td>
+                                    <td>${req.body.date}</td>
+                                </tr>
+                            </table>
+                            <p><a href="${url}"><b>Login to my account</b></a>.</p>`
+                        }
+            
+                        sgMail.send(message)
+                            .then(response => {
+                                res.json({
+                                    message: 'Successful Saved',
+                                    success: true,
+                                    data: data
+                                })
+                            })
+                            .catch(error => console.log(error.message))
+                    } else {
+                        if (err) {
+                            res.json(returnError(JSON.stringify(err)))
+                        } else {
+        
+                            res.json({
+                                message: 'Successful Save',
+                                success: true,
+                                data: data
+                            })
+        
+                        }
                     }
                 } else {
                     auditTrail(
@@ -1018,19 +1110,21 @@ module.exports = () => {
                         LOG_ACTION.APPOINTMENT_NEW,
                         'New appointment has been created. Appointment id: ' + id
                     )
+
+                    if (err) {
+                        res.json(returnError(JSON.stringify(err)))
+                    } else {
+    
+                        res.json({
+                            message: 'Successful Save',
+                            success: true,
+                            data: data
+                        })
+    
+                    }
                 }
 
-                if (err) {
-                    res.json(returnError(JSON.stringify(err)))
-                } else {
-
-                    res.json({
-                        message: 'Successful Save',
-                        success: true,
-                        data: data
-                    })
-
-                }
+                
             })
 
         // appointment.save((err, data) => {

@@ -6,7 +6,8 @@ let serviceType = new Schema({
     serviceType: { type: String, required: true },
     duration: { type: Number },
     examinationForm: { type: Boolean },
-    agreementForm: { type: String }
+    agreementForm: { type: String },
+    preferredDoctor: { type: Boolean, default: false }
 },
 {
   timestamps: true

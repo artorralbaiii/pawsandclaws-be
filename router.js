@@ -42,6 +42,7 @@ module.exports = (express) => {
     api.get('/audit', controller.getAuditLogs)
     api.get('/client', controller.getClients)
     api.get('/config', controller.getConfig)
+    api.get('/doctor', controller.getDoctors)
     api.get('/pet/:id', controller.getPets)
     api.get('/pet/user/:userid', controller.getPets)
     api.get('/pet-count/:id', controller.petCount)
